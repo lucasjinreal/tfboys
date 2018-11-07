@@ -15,7 +15,8 @@ import cv2
 import numpy as np
 import torch
 
-target_size = 512
+
+target_size = 224
 num_classes = 5
 
 
@@ -30,7 +31,7 @@ def test_data():
     # write some data loader
     dataset = ImageFolder('../../tf_codes/data/flower_photos/', transform=transform,)
     print(dataset.class_to_idx)
-    dataloader = DataLoader(dataset=dataset, batch_size=4, shuffle=True, num_workers=2)
+    dataloader = DataLoader(dataset=dataset, batch_size=4, shuffle=True, num_workers=1)
     for i, batch_data in enumerate(dataloader):
         if i == 0:
             img, target = batch_data
@@ -59,12 +60,12 @@ def train():
     dataset = ImageFolder('../../tf_codes/data/flower_photos/', transform=transform)
     print(dataset.class_to_idx)
     num_classes = len(dataset.classes)
-    dataloader = DataLoader(dataset=dataset, batch_size=34, shuffle=True, num_workers=2)
+    dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True, num_workers=0)
 
     model = MobileNetV2(num_classes=num_classes, input_size=target_size)
     trainer = Trainer(model=model, train_loader=dataloader, val_loader=None, save_epochs=50,
                       checkpoint_dir='./checkpoints', resume_from='checkpoint.pth.tar', 
-                      num_epochs=15000)
+                      num_epochs=100)
     trainer.train()
 
 
