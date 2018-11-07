@@ -36,6 +36,7 @@ class Trainer(object):
         self.load_checkpoint(self.kwargs['resume_from'])
 
     def train(self):
+        print('Start to train...')
         try:
             for e in range(self.start_epoch, self.kwargs['num_epochs']):
                 i = 0
@@ -66,6 +67,11 @@ class Trainer(object):
                             'optimizer': self.optimizer.state_dict(),
                         }, is_best=False
                     )
+                if e % 10 == 0:
+                    print('Checking prediction ouput...')
+                    print('batch ground truth: {}, predicted result: {}'.format(
+                        target.numpy(), torch.argmax(output)
+                    ))
         except KeyboardInterrupt:
             print('Interrupted, saving checkpoints at epoch: {}'.format(e))
             self.save_checkpoint(
