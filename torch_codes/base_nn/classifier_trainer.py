@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 import torch
 import shutil
 import os
+import numpy as np
 
 
 class Trainer(object):
@@ -56,7 +57,8 @@ class Trainer(object):
                     self.optimizer.zero_grad()
                     loss.backward()
                     self.optimizer.step()
-                    print('Epoch: {}  iter: {}, loss: {}'.format(e, i, loss))
+                    if i % 100 == 0:
+                        print('Epoch: {}  iter: {}, loss: {}'.format(e, i, loss))
 
                 if e % self.save_epochs == 0:
                     print('Saving checkpoints at epoch: {}'.format(e))
@@ -67,11 +69,16 @@ class Trainer(object):
                             'optimizer': self.optimizer.state_dict(),
                         }, is_best=False
                     )
-                if e % 10 == 0:
+                if e % 2 == 0:
                     print('Checking prediction ouput...')
-                    print('batch ground truth: {}, predicted result: {}'.format(
-                        target.numpy(), torch.argmax(output)
-                    ))
+                    print('output vs target:')
+                    a = np.array([np.argmax(i) for i in output.detach().cpu().numpy()])
+                    b = target.cpu().numpy()
+                    print(a)
+                    print(b)
+                    c = [i for i in a - b if i == 0]
+                    print('accuracy: {}%\n'.format((len(c) / len(a)) * 100))
+
         except KeyboardInterrupt:
             print('Interrupted, saving checkpoints at epoch: {}'.format(e))
             self.save_checkpoint(

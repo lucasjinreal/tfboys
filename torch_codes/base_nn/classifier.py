@@ -3,6 +3,22 @@ simple classifier for both train and predict
 on single image
 
 the classify image data is using flowers
+
+
+At least 40 epochs you can see converge evidence
+Epoch: 43  iter: 100, loss: 0.37397363781929016
+Epoch: 43  iter: 200, loss: 0.7303532958030701
+Epoch: 43  iter: 300, loss: 0.8449480533599854
+Epoch: 44  iter: 100, loss: 0.5675420165061951
+Epoch: 44  iter: 200, loss: 0.8853188157081604
+Epoch: 44  iter: 300, loss: 0.9220790863037109
+Checking prediction ouput...
+output vs target:
+[0 2 1 0 4 2 3 1 4 3]
+[0 2 0 4 4 4 4 1 4 3]
+accuracy: 60.0%
+
+
 """
 from classifier_trainer import Trainer
 from nets.mobilenet_v2 import MobileNetV2
@@ -31,7 +47,7 @@ def test_data():
     # write some data loader
     dataset = ImageFolder('../../tf_codes/data/flower_photos/', transform=transform,)
     print(dataset.class_to_idx)
-    dataloader = DataLoader(dataset=dataset, batch_size=4, shuffle=True, num_workers=1)
+    dataloader = DataLoader(dataset=dataset, batch_size=24, shuffle=True, num_workers=1)
     for i, batch_data in enumerate(dataloader):
         if i == 0:
             img, target = batch_data
@@ -60,7 +76,7 @@ def train():
     dataset = ImageFolder('../../tf_codes/data/flower_photos/', transform=transform)
     print(dataset.class_to_idx)
     num_classes = len(dataset.classes)
-    dataloader = DataLoader(dataset=dataset, batch_size=2, shuffle=True, num_workers=0)
+    dataloader = DataLoader(dataset=dataset, batch_size=12, shuffle=True, num_workers=0)
 
     model = MobileNetV2(num_classes=num_classes, input_size=target_size)
     trainer = Trainer(model=model, train_loader=dataloader, val_loader=None, save_epochs=50,
