@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
 from torchvision.models.vgg import VGG
-from BagData import dataloader
 import pdb
 import numpy as np
 import time
