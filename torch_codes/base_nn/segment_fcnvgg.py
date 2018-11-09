@@ -12,6 +12,7 @@ from math import log10
 import numpy as np
 import random
 import os
+import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -21,19 +22,25 @@ from torch.utils.data import DataLoader
 from nets.unet import UNet
 import torchvision
 from torchvision.transforms import Compose, CenterCrop, ToTensor, RandomResizedCrop, Resize
+from torch.optim import lr_scheduler
 import cv2
 import torch.nn.functional as F
-from nets.common import device
 
+from dataset.seg_cityscapes import CityScapesSegDataset
+from alfred.dl.torch.common import device
+from nets.fcns import VGGNet, FCN8s, FCNs
 
-from dataset.seg_dataset_coco import CoCoSegDataset
-from dataset.seg_dataset_folder import SegFolderDataset
-
-target_size = 512
+# h, w
+target_size = (512, 1024)
+# cityscapes classes num
+n_classes = 33
 epochs = 500
-batch_size = 1
+lr = 1e-4
+batch_size = 2
 save_per_epoch = 5
-save_dir = 'weights/seg'
+save_dir = 'checkpoints/seg'
+
+cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
 
 
 def test_data(data_loader):
@@ -51,53 +58,62 @@ def test_data(data_loader):
 
 
 def train():
-
-    transforms = Compose(
-        [RandomResizedCrop(size=target_size), ToTensor()]
-    )
-
-    # train_data = CoCoSegDataset(coco_root='/media/jintian/netac/permanent/datasets/coco',
-    #                             transforms=transforms)
-    train_data = SegFolderDataset(data_root='/media/jintian/netac/permanent/datasets/Cityscapes/tiny_cityscapes',
-                                  transforms=transforms)
+    train_data = CityScapesSegDataset(root_dir=cityscapes_root, target_size=target_size, n_class=n_classes)
     data_loader = DataLoader(dataset=train_data, batch_size=batch_size, num_workers=1)
     # test_data(data_loader)
 
-    # Unet input may not be 512, it must be some other input
-    # change Unet to FCN with VGG model
-    model = UNet(colordim=3).to(device)
+    vgg_model = VGGNet(requires_grad=True, remove_fc=True).to(device)
+    fcn_model = FCNs(pretrained_net=vgg_model, n_class=n_classes).to(device)
 
-    # there are some dimension issue about UNet, fix that later
-    optimizer = optim.SGD(model.parameters(), momentum=0.9, weight_decay=0.0005, lr=0.0001)
+    criterion = nn.BCEWithLogitsLoss()
+    optimizer = optim.RMSprop(fcn_model.parameters(), lr=lr, momentum=0, weight_decay=1e-5)
+    # adjust lr every 50 steps
+    scheduler = lr_scheduler.StepLR(optimizer, step_size=50, gamma=0.5)
+
     for epoch in range(epochs):
-        epoch_loss = 0
+        scheduler.step()
 
+        epoch_loss = 0
         i = 0
         for i, batch_data in enumerate(data_loader):
-            img, seg_mask = batch_data
-            seg_mask_predict = model(img)
-            seg_mask_probs = F.sigmoid(seg_mask_predict)
+            inputs = batch_data['X'].to(device)
+            labels = batch_data['Y'].to(device)
 
-            seg_mask_predict_flat = seg_mask_probs.view(-1)
-            seg_mask_flat = seg_mask.view(-1)
+            outputs = fcn_model(inputs)
+            # print(outputs.cpu().detach().numpy())
 
-            loss = nn.BCELoss(seg_mask_predict_flat, seg_mask_flat)
+            loss = criterion(outputs, labels)
             epoch_loss += loss.item()
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-
-            print('Epoch: {}, batch: {}, loss: {}'.format(epoch, i, loss))
-        print('Epoch {} finished. Average loss: {}'.format(epoch, epoch_loss/i))
+            if i % 10 == 0:
+                print('Epoch: {}, batch: {}, loss: {}'.format(epoch, i, loss.data[0]))
+        print('Epoch {} finished. Average loss: {}\n'.format(epoch, epoch_loss/i))
 
         if epoch % save_per_epoch == 0 and epoch != 0:
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             else:
-                torch.save(model.state_dict(), os.path.join(save_dir, 'seg_{}_{}.pth'.format(epoch, epoch_loss/i)))
+                torch.save(fcn_model.state_dict(), os.path.join(save_dir, 'seg_{}_{}.pth'.format(epoch, epoch_loss/i)))
                 print('Model has been saved.')
 
 
+def predict():
+    pass
+
+
 if __name__ == '__main__':
-    train()
+    if len(sys.argv) >= 2:
+
+        if sys.argv[1] == 'train':
+            train()
+        elif sys.argv[1] == 'predict':
+            img_f = sys.argv[2]
+            predict()
+        elif sys.argv[1] == 'preview':
+            test_data()
+    else:
+        print('python3 classifier.py train to train net'
+              '\npython3 classifier.py predict img_f/path to predict img.')

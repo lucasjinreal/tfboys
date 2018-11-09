@@ -5,6 +5,8 @@ doing semantic segmentation
 there is a link talk about loss:
 http://sshuair.com/2017/10/21/pytorch-loss/
 
+I think UNet only support for 1-channel image segmentation?
+
 """
 
 from __future__ import print_function
@@ -23,11 +25,11 @@ import torchvision
 from torchvision.transforms import Compose, CenterCrop, ToTensor, RandomResizedCrop, Resize
 import cv2
 import torch.nn.functional as F
-from nets.common import device
 
+from alfred.dl.torch.common import device
 
-from dataset.seg_dataset_coco import CoCoSegDataset
-from dataset.seg_dataset_folder import SegFolderDataset
+from dataset.seg_coco import CoCoSegDataset
+from dataset.seg_folder import SegFolderDataset
 
 target_size = 512
 epochs = 500
@@ -64,7 +66,6 @@ def train():
     # test_data(data_loader)
 
     # Unet input may not be 512, it must be some other input
-    # change Unet to FCN with VGG model
     model = UNet(colordim=3).to(device)
 
     # there are some dimension issue about UNet, fix that later

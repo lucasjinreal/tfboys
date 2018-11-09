@@ -2,7 +2,8 @@ from torch import nn
 import numpy as np
 import torch
 from torch.autograd import Variable
-
+import cv2
+from PIL import Image
 
 
 def bce_loss_test():
@@ -61,5 +62,25 @@ def cross_entropy():
     print('output: ', output)
 
 
+def mask_test():
+    a = '/media/jintain/sg/permanent/datasets/Cityscapes/gtFine/train/ulm/ulm_000094_000019_gtFine_labelIds.png'
+    b = cv2.imread(a, cv2.IMREAD_GRAYSCALE)
+    print(b)
+
+    c = np.asarray(Image.open(a))
+    print(c)
+
+    cv2.imshow('', c)
+    cv2.waitKey(0)
+
+    print(np.max(c), np.min(c))
+
+    print(c.shape)
+
+    c = cv2.resize(c, dsize=(800, 500))
+    cv2.imshow('', c)
+    cv2.waitKey(0)
+    print(c.shape)
+
 if __name__ == '__main__':
-    cross_entropy()
+    mask_test()
