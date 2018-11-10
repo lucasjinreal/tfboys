@@ -16,22 +16,6 @@ from utils.pycocotools import mask as COCOmask
 
 
 class COCODetection(data.Dataset):
-    """VOC Detection Dataset Object
-
-    input is image, target is annotation
-
-    Arguments:
-        root (string): filepath to VOCdevkit folder.
-        image_set (string): imageset to use (eg. 'train', 'val', 'test')
-        transform (callable, optional): transformation to perform on the
-            input image
-        target_transform (callable, optional): transformation to perform on the
-            target `annotation`
-            (eg: take in caption string, return tensor of word indices)
-        dataset_name (string, optional): which dataset to load
-            (default: 'VOC2007')
-    """
-
     def __init__(self, root, image_sets, preproc=None, target_transform=None,
                  dataset_name='COCO'):
         self.root = root
@@ -160,7 +144,6 @@ class COCODetection(data.Dataset):
 
             # target = self.target_transform(target, width, height)
         # print(target.shape)
-
         return img, target
 
     def __len__(self):
