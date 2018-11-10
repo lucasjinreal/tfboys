@@ -25,7 +25,7 @@ def parse_args():
                         help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
     parser.add_argument('-s', '--size', default='300',
                         help='300 or 512 input size.')
-    parser.add_argument('-d', '--dataset', default='VOC',
+    parser.add_argument('-d', '--dataset', default='COCO',
                         help='VOC or COCO dataset')
     parser.add_argument(
         '--basenet', default='./weights/vgg16_reducedfc.pth', help='pretrained base model')
@@ -69,7 +69,7 @@ def train():
         train_sets = [('2007', 'trainval'), ('2012', 'trainval')]
         cfg = (VOC_300, VOC_512)[args.size == '512']
     else:
-        train_sets = [('2014', 'train'), ('2014', 'val')]
+        train_sets = [('2017', 'train'), ('2017', 'val')]
         cfg = (COCO_300, COCO_512)[args.size == '512']
 
     if args.version == 'RFB_vgg':
@@ -93,36 +93,7 @@ def train():
     momentum = 0.9
 
     net = build_net('train', img_dim, num_classes)
-    print(net)
-    if not args.resume_net:
-        base_weights = torch.load(args.basenet)
-        print('Loading base network...')
-        net.base.load_state_dict(base_weights)
-
-        def xavier(param):
-            init.xavier_uniform(param)
-
-        def weights_init(m):
-            for key in m.state_dict():
-                if key.split('.')[-1] == 'weight':
-                    if 'conv' in key:
-                        init.kaiming_normal_(m.state_dict()[key], mode='fan_out')
-                    if 'bn' in key:
-                        m.state_dict()[key][...] = 1
-                elif key.split('.')[-1] == 'bias':
-                    m.state_dict()[key][...] = 0
-
-        print('Initializing weights...')
-        # initialize newly added layers' weights with kaiming_normal method
-        net.extras.apply(weights_init)
-        net.loc.apply(weights_init)
-        net.conf.apply(weights_init)
-        net.Norm.apply(weights_init)
-        if args.version == 'RFB_E_vgg':
-            net.reduce.apply(weights_init)
-            net.up_reduce.apply(weights_init)
-
-    else:
+    if args.resume_net:
         # load resume network
         print('Loading resume network...')
         state_dict = torch.load(args.resume_net)
@@ -138,10 +109,8 @@ def train():
                 name = k
             new_state_dict[name] = v
         net.load_state_dict(new_state_dict)
-
     if args.ngpu > 1:
         net = torch.nn.DataParallel(net, device_ids=list(range(args.ngpu)))
-
     if args.cuda:
         net.cuda()
         cudnn.benchmark = True

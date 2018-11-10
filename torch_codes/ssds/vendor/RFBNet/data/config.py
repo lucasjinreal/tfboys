@@ -3,7 +3,7 @@ import os.path
 
 # change those 2 path
 VOCroot = ''
-COCOroot = ''
+COCOroot = '/media/jintian/netac/permanent/datasets/coco'
 
 if not os.path.exists(VOCroot) or not os.path.exists(COCOroot):
     ValueError('you must change VOCroot and COCOroot to your machine.')
