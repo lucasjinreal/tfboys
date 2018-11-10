@@ -15,7 +15,6 @@ import glob
 from pycocotools.coco import COCO
 import cv2
 import numpy as np
-from vision.vis_kit import gen_unique_color
 from PIL import Image
 
 
