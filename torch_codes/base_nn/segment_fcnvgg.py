@@ -40,7 +40,8 @@ batch_size = 2
 save_per_epoch = 5
 save_dir = 'checkpoints/seg'
 
-cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
+# cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
+cityscapes_root = '/media/jintian/netac/permanent/datasets/Cityscapes'
 
 
 def test_data(data_loader):
