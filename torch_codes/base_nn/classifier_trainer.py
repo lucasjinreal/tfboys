@@ -71,11 +71,11 @@ class Trainer(object):
                     )
                 if e % 2 == 0:
                     print('Checking prediction ouput...')
-                    print('output vs target:')
+                    print('label vs predict:')
                     a = np.array([np.argmax(i) for i in output.detach().cpu().numpy()])
                     b = target.cpu().numpy()
-                    print(a)
                     print(b)
+                    print(a)
                     c = [i for i in a - b if i == 0]
                     print('accuracy: {}%\n'.format((len(c) / len(a)) * 100))
 
