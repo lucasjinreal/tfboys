@@ -13,6 +13,7 @@ from dataset.seg_voc import VOC2012ClassSeg, VOC2011ClassSeg
 
 # change dataloader to alfred wrapper
 from alfred.dl.torch.data.dataloader import SafeDataLoader
+from alfred.dl.torch.data.dataset import SafeDataset
 from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
@@ -55,9 +56,12 @@ def get_parameters(model, bias=False):
 
 def train():
     model_type = 'FCN8s'
-    train_loader = DataLoader(VOC2012ClassSeg(root=voc_root, transform=True), batch_size=1, shuffle=True)
-    val_loader = DataLoader(VOC2011ClassSeg(root=voc_root, split='seg11valid', transform=True), batch_size=1,
-                            shuffle=False)
+
+    train_dataset = VOC2012ClassSeg(root=voc_root, transform=True)
+    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+
+    val_dataset = VOC2011ClassSeg(root=voc_root, split='seg11valid', transform=True)
+    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
 
     model = FCN8s(n_class=21).to(device)
     start_epoch = 0

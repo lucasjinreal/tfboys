@@ -176,17 +176,8 @@ class Trainer(object):
 
         try:
             for e in range(self.start_epoch, self.epochs):
-                i = 0
-                for batch_idx, (data, target) in enumerate(self.train_loader):
+                for i, (data, target) in enumerate(self.train_loader):
                     if data is not None and target is not None:
-                        i += 1
-                        iteration = batch_idx + self.epoch * len(self.train_loader)
-                        if self.iteration != 0 and (iteration - 1) != self.iteration:
-                            continue  # for resuming
-                        self.iteration = iteration
-
-                        if self.iteration % self.interval_validate == 0 and self.iteration != 0:
-                            self.validate()
 
                         data, target = data.to(device), target.to(device)
                         data, target = Variable(data), Variable(target)
@@ -213,14 +204,13 @@ class Trainer(object):
                             print('Epoch: {}, iter: {}, acc: {}, acc_cls: {}, mean_iou: {}'.format(
                                 e, i, acc, acc_cls, mean_iu
                             ))
-                        if self.iteration >= self.max_iter:
-                            break
+                        if e % 50 == 0 and e != 0:
+                            self.validate()
                     else:
                         print('passing one invalid training sample.')
                         continue
                 if e % 10 == 0:
                     self.save_checkpoint(epoch=e, iter=i)
-
         except KeyboardInterrupt:
             print('Try saving model, pls hold...')
             self.save_checkpoint(epoch=e, iter=i)
