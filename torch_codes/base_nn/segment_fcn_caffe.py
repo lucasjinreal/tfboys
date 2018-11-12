@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-
-import argparse
-import datetime
 import os
 import os.path as osp
-
 import torch
-import yaml
+import sys
 
 from nets.seg.fcn8s import FCN8s
 from nets.seg.fcn16s import FCN16s
@@ -22,6 +18,7 @@ here = osp.dirname(osp.abspath(__file__))
 if not os.path.exists(voc_root):
     print('{} not found.'.format(voc_root))
     exit(0)
+pre_train = False
 
 
 def get_parameters(model, bias=False):
@@ -51,74 +48,39 @@ def get_parameters(model, bias=False):
             raise ValueError('Unexpected module: %s' % str(m))
 
 
-def main():
-    parser = argparse.ArgumentParser(
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument('-g', '--gpu', type=int, default=0, help='gpu id')
-    parser.add_argument('--resume', help='checkpoint path')
-    parser.add_argument(
-        '--max-iteration', type=int, default=100000, help='max iteration'
-    )
-    parser.add_argument(
-        '--lr', type=float, default=1.0e-14, help='learning rate',
-    )
-    parser.add_argument(
-        '--weight-decay', type=float, default=0.0005, help='weight decay',
-    )
-    parser.add_argument(
-        '--momentum', type=float, default=0.99, help='momentum',
-    )
-    parser.add_argument(
-        '--pretrained-model',
-        default=FCN16s.download(),
-        help='pretrained model of FCN16s',
-    )
-    args = parser.parse_args()
-    args.model = 'FCN8s'
-
-    # 1. dataset
+def train():
+    model_type = 'FCN8s'
     train_loader = DataLoader(VOC2012ClassSeg(root=voc_root, transform=True), batch_size=1, shuffle=True)
     val_loader = DataLoader(VOC2011ClassSeg(root=voc_root, split='seg11valid', transform=True), batch_size=1,
                             shuffle=False)
 
-    # 2. model
     model = FCN8s(n_class=21).to(device)
     start_epoch = 0
     start_iteration = 0
-    if args.resume:
-        checkpoint = torch.load(args.resume)
-        model.load_state_dict(checkpoint['model_state_dict'])
-        start_epoch = checkpoint['epoch']
-        start_iteration = checkpoint['iteration']
-    else:
+
+    if pre_train:
         fcn16s = FCN16s()
-        state_dict = torch.load(args.pretrained_model)
+        state_dict = torch.load(fcn16s.download())
         try:
             fcn16s.load_state_dict(state_dict)
         except RuntimeError:
             fcn16s.load_state_dict(state_dict['model_state_dict'])
         model.copy_params_from_fcn16s(fcn16s)
 
-    # 3. optimizer
     optim = torch.optim.SGD(
         [
             {'params': get_parameters(model, bias=False)},
             {'params': get_parameters(model, bias=True),
-             'lr': args.lr * 2, 'weight_decay': 0},
+             'lr': 10e-4, 'weight_decay': 0},
         ],
-        lr=args.lr,
-        momentum=args.momentum,
-        weight_decay=args.weight_decay)
-    if args.resume:
-        optim.load_state_dict(checkpoint['optim_state_dict'])
+        lr=10e-5, momentum=0, weight_decay=0)
 
     trainer = Trainer(
         model=model,
         optimizer=optim,
         train_loader=train_loader,
         val_loader=val_loader,
-        max_iter=args.max_iteration,
+        max_iter=150000,
         interval_validate=4000,
     )
     trainer.epoch = start_epoch
@@ -126,5 +88,20 @@ def main():
     trainer.train()
 
 
+def predict():
+    # predict on single image
+    pass
+
+
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) >= 2:
+        if sys.argv[1] == 'train':
+            train()
+        elif sys.argv[1] == 'predict':
+            img_f = sys.argv[2]
+            predict()
+        elif sys.argv[1] == 'preview':
+            test_data()
+    else:
+        print('python3 segment_fc_caffe.py train to train net'
+              '\npython3 segment_fc_caffe.py predict img_f/path to predict img.')
