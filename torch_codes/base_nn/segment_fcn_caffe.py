@@ -13,6 +13,8 @@ from dataset.seg_voc import VOC2012ClassSeg, VOC2011ClassSeg
 from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
+from PIL import Image
+
 voc_root = '/media/jintain/sg/permanent/datasets/VOCdevkit'
 here = osp.dirname(osp.abspath(__file__))
 if not os.path.exists(voc_root):
@@ -88,9 +90,28 @@ def train():
     trainer.train()
 
 
-def predict():
+def predict(img_f):
     # predict on single image
-    pass
+    dataset = VOC2012ClassSeg(root=voc_root, transform=True)
+
+    model = FCN8s(n_class=21).to(device)
+    model.eval()
+
+    image = Image.open(img_f)
+    img = dataset.preprocess(image)
+
+    filename = os.path.join('checkpoints/fcn_seg', 'checkpoint.pth.tar')
+    if os.path.exists(filename) and os.path.isfile(filename):
+        print('Loading checkpoint {}'.format(filename))
+        checkpoint = torch.load(filename)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print('checkpoint loaded successful from {}.'.format(filename))
+    else:
+        print('No checkpoint exists from {}, skip load checkpoint...'.format(filename))
+
+    # now do predict
+    out = model(torch.Tensor(img).to(device))
+    print(out)
 
 
 if __name__ == '__main__':
@@ -99,7 +120,7 @@ if __name__ == '__main__':
             train()
         elif sys.argv[1] == 'predict':
             img_f = sys.argv[2]
-            predict()
+            predict(img_f=img_f)
         elif sys.argv[1] == 'preview':
             test_data()
     else:

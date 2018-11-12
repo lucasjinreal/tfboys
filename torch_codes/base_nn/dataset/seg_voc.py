@@ -85,6 +85,19 @@ class VOCClassSegBase(data.Dataset):
         else:
             return img, lbl
 
+    def preprocess(self, img):
+        """
+        img reading from PIL.Image
+        :param img:
+        :return:
+        """
+        img = np.array(img, dtype=np.uint8)
+        img = img[:, :, ::-1]  # RGB -> BGR
+        img = img.astype(np.float64)
+        img -= self.mean_bgr
+        img = img.transpose(2, 0, 1)
+        return img
+
     def transform(self, img, lbl):
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
