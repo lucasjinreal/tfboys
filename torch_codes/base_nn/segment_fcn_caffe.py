@@ -10,6 +10,9 @@ from nets.seg.fcn32s import FCN32s
 
 from segment_trainer import Trainer
 from dataset.seg_voc import VOC2012ClassSeg, VOC2011ClassSeg
+
+# change dataloader to alfred wrapper
+from alfred.dl.torch.data.dataloader import SafeDataLoader
 from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
@@ -122,7 +125,8 @@ if __name__ == '__main__':
             img_f = sys.argv[2]
             predict(img_f=img_f)
         elif sys.argv[1] == 'preview':
-            test_data()
+            pass
+            # test_data()
     else:
         print('python3 segment_fc_caffe.py train to train net'
               '\npython3 segment_fc_caffe.py predict img_f/path to predict img.')

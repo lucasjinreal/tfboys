@@ -176,45 +176,48 @@ class Trainer(object):
 
         try:
             for e in range(self.start_epoch, self.epochs):
-
                 i = 0
                 for batch_idx, (data, target) in enumerate(self.train_loader):
-                    i += 1
-                    iteration = batch_idx + self.epoch * len(self.train_loader)
-                    if self.iteration != 0 and (iteration - 1) != self.iteration:
-                        continue  # for resuming
-                    self.iteration = iteration
+                    if data is not None and target is not None:
+                        i += 1
+                        iteration = batch_idx + self.epoch * len(self.train_loader)
+                        if self.iteration != 0 and (iteration - 1) != self.iteration:
+                            continue  # for resuming
+                        self.iteration = iteration
 
-                    if self.iteration % self.interval_validate == 0 and self.iteration != 0:
-                        self.validate()
+                        if self.iteration % self.interval_validate == 0 and self.iteration != 0:
+                            self.validate()
 
-                    data, target = data.to(device), target.to(device)
-                    data, target = Variable(data), Variable(target)
-                    self.optimizer.zero_grad()
-                    score = self.model(data)
+                        data, target = data.to(device), target.to(device)
+                        data, target = Variable(data), Variable(target)
+                        self.optimizer.zero_grad()
+                        score = self.model(data)
 
-                    loss = cross_entropy2d(score, target, size_average=self.size_average)
-                    loss /= len(data)
-                    loss_data = loss.data.item()
-                    if np.isnan(loss_data):
-                        raise ValueError('loss is nan while training')
-                    loss.backward()
-                    self.optimizer.step()
+                        loss = cross_entropy2d(score, target, size_average=self.size_average)
+                        loss /= len(data)
+                        loss_data = loss.data.item()
+                        if np.isnan(loss_data):
+                            raise ValueError('loss is nan while training')
+                        loss.backward()
+                        self.optimizer.step()
 
-                    metrics = []
-                    lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
-                    lbl_true = target.data.cpu().numpy()
-                    acc, acc_cls, mean_iu, fwavacc = utils.label_accuracy_score(
-                        lbl_true, lbl_pred, n_class=n_class)
-                    metrics.append((acc, acc_cls, mean_iu, fwavacc))
-                    metrics = np.mean(metrics, axis=0)
+                        metrics = []
+                        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+                        lbl_true = target.data.cpu().numpy()
+                        acc, acc_cls, mean_iu, fwavacc = utils.label_accuracy_score(
+                            lbl_true, lbl_pred, n_class=n_class)
+                        metrics.append((acc, acc_cls, mean_iu, fwavacc))
+                        metrics = np.mean(metrics, axis=0)
 
-                    if i % 10 == 0:
-                        print('Epoch: {}, iter: {}, acc: {}, acc_cls: {}, mean_iou: {}'.format(
-                            e, i, acc, acc_cls, mean_iu
-                        ))
-                    if self.iteration >= self.max_iter:
-                        break
+                        if i % 10 == 0:
+                            print('Epoch: {}, iter: {}, acc: {}, acc_cls: {}, mean_iou: {}'.format(
+                                e, i, acc, acc_cls, mean_iu
+                            ))
+                        if self.iteration >= self.max_iter:
+                            break
+                    else:
+                        print('passing one invalid training sample.')
+                        continue
                 if e % 10 == 0:
                     self.save_checkpoint(epoch=e, iter=i)
 

@@ -16,6 +16,7 @@ import scipy.io
 import torch
 from torch.utils import data
 import os
+import cv2
 
 
 class VOCClassSegBase(data.Dataset):
@@ -73,17 +74,31 @@ class VOCClassSegBase(data.Dataset):
         data_file = self.files[self.split][index]
         # load image
         img_file = data_file['img']
+
+        # PIL corrupt sometimes
         img = PIL.Image.open(img_file)
+        # img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
         img = np.array(img, dtype=np.uint8)
+
         # load label
         lbl_file = data_file['lbl']
         lbl = PIL.Image.open(lbl_file)
+        # lbl = cv2.imread(lbl_file, 0)
+        # lbl = np.array(lbl / 255, dtype=np.uint8)
         lbl = np.array(lbl, dtype=np.int32)
         lbl[lbl == 255] = -1
         if self._transform:
             return self.transform(img, lbl)
         else:
             return img, lbl
+
+        # try:
+        #
+        # except Exception as e:
+        #     print('Reading item corrupt: {}'.format(e))
+        #     print('Corrupt file path: ', img_file)
+        #     # in train, check None, if, then pass
+        #     return None, None
 
     def preprocess(self, img):
         """

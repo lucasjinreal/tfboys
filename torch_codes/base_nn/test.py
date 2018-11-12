@@ -82,5 +82,18 @@ def mask_test():
     cv2.waitKey(0)
     print(c.shape)
 
+
+def im_read_test():
+    img_f = 'data/2007_000032.jpg'
+    a = cv2.cvtColor(cv2.imread(img_f), cv2.COLOR_BGR2RGB)
+    print(a)
+    print(a.shape)
+    print('max: ', np.max(a))
+    b = Image.open(img_f)
+    b = np.array(b, dtype=np.int32)
+    print(b)
+    print(b.shape)
+    print('max: ', np.max(b))
+
 if __name__ == '__main__':
-    mask_test()
+    im_read_test()
