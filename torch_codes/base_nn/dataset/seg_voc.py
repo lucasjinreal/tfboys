@@ -72,7 +72,6 @@ class VOCClassSegBase(data.Dataset):
         return len(self.files[self.split])
 
     def __getitem__(self, index):
-
         try:
             data_file = self.files[self.split][index]
             # load image
@@ -90,6 +89,9 @@ class VOCClassSegBase(data.Dataset):
             # lbl = np.array(lbl / 255, dtype=np.uint8)
             lbl = np.array(lbl, dtype=np.int32)
             lbl[lbl == 255] = -1
+
+            # NOTE: in label, -1 is border, 0 is background,
+            # why not change border to 0 too?????
             if self._transform:
                 return self.transform(img, lbl)
             else:
@@ -99,19 +101,14 @@ class VOCClassSegBase(data.Dataset):
             print('Corrupt file path: ', img_file)
             # in train, check None, if, then pass
             data_file = self.files[self.split][index + 1]
-            # load image
             img_file = data_file['img']
 
             # PIL corrupt sometimes
             img = PIL.Image.open(img_file)
-            # img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
             img = np.array(img, dtype=np.uint8)
 
-            # load label
             lbl_file = data_file['lbl']
             lbl = PIL.Image.open(lbl_file)
-            # lbl = cv2.imread(lbl_file, 0)
-            # lbl = np.array(lbl / 255, dtype=np.uint8)
             lbl = np.array(lbl, dtype=np.int32)
             lbl[lbl == 255] = -1
             if self._transform:

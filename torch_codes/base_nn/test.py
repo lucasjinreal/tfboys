@@ -4,6 +4,8 @@ import torch
 from torch.autograd import Variable
 import cv2
 from PIL import Image
+np.set_printoptions(threshold=np.inf)
+
 
 
 def bce_loss_test():
@@ -84,16 +86,31 @@ def mask_test():
 
 
 def im_read_test():
-    img_f = 'data/2007_000032.jpg'
-    a = cv2.cvtColor(cv2.imread(img_f), cv2.COLOR_BGR2RGB)
+    """
+    In png label data, better using Image to read
+    I still don't know how to read in opencv
+    TODO: Fucking read index with opencv!!!!!!!!!!!!!!!
+    :return:
+    """
+    img_f = 'data/2007_000032.png'
+    # a = Image.open(img_f)
+    a = cv2.imread(img_f, cv2.IMREAD_GRAYSCALE)
+
+    a = np.asarray(a, dtype=np.int8)
+
     print(a)
     print(a.shape)
     print('max: ', np.max(a))
-    b = Image.open(img_f)
-    b = np.array(b, dtype=np.int32)
-    print(b)
-    print(b.shape)
-    print('max: ', np.max(b))
+    # b = Image.open(img_f)
+    # b = np.array(b, dtype=np.int8)
+    # print(b)
+    # print(b.shape)
+    # print('max: ', np.max(b))
+    # filt = (b == 15)
+    # b = b[filt]
+    # b = np.asarray(b, dtype=np.int8)
+    cv2.imshow('rr', a)
+    cv2.waitKey(0)
 
 if __name__ == '__main__':
     im_read_test()

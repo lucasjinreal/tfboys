@@ -18,6 +18,13 @@ from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
 from PIL import Image
+import numpy as np
+import cv2
+from util.seg_utils import draw_seg, voc_color_table
+from util.get_dataset_colormap import label_to_color_image
+
+import time
+
 
 voc_root = '/media/jintain/sg/permanent/datasets/VOCdevkit'
 here = osp.dirname(osp.abspath(__file__))
@@ -98,13 +105,14 @@ def train():
 
 
 def predict(img_f):
-    # predict on single image
+    # predict on single image, just for preprocess image only
     dataset = VOC2012ClassSeg(root=voc_root, transform=True)
 
     model = FCN8s(n_class=21).to(device)
     model.eval()
 
     image = Image.open(img_f)
+    img_original = np.asarray(image)
     img = dataset.preprocess(image)
 
     filename = os.path.join('checkpoints/fcn_seg', 'checkpoint.pth.tar')
@@ -117,8 +125,29 @@ def predict(img_f):
         print('No checkpoint exists from {}, skip load checkpoint...'.format(filename))
 
     # now do predict
-    out = model(torch.Tensor(img).to(device))
-    print(out)
+    inp = torch.Tensor(img).unsqueeze(dim=0).to(device)
+    print('input: ', inp.size())
+    out = model(inp)
+    out = out.detach().cpu().numpy()[0]
+    print(out.shape)
+
+    # convert [n_classes, w, h] to [w, h] mask
+    res = np.asarray(np.argmax(out, axis=0), dtype=np.int8)
+    print(res.shape)
+    print(res)
+    # color idx to mask
+    masked, mask_color = draw_seg(img_original, res, voc_color_table)
+    cv2.imshow('masked', masked)
+    cv2.imshow('masked_color', mask_color)
+    cv2.imshow('res', res)
+
+    cv2.imwrite('results/{}_masked.png'.format(time.time()), masked)
+    cv2.imwrite('results/{}_mask_color.png'.format(time.time()), mask_color)
+    cv2.waitKey(0)
+
+
+
+
 
 
 if __name__ == '__main__':
