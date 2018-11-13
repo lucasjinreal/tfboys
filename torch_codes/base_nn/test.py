@@ -112,5 +112,18 @@ def im_read_test():
     cv2.imshow('rr', a)
     cv2.waitKey(0)
 
+
+def mul():
+    a = np.array([
+        [(2, 3, 4), (3, 4, 5)],
+        [(2, 3, 4), (3, 4, 5)],
+        [(2, 3, 4), (3, 4, 5)]])
+    b = np.array([[0, 0],
+         [1, 0],
+         [0, 1]])
+    print(a@b)
+    print(a[np.where(b > 0)])
+    print(a*b)
+
 if __name__ == '__main__':
-    im_read_test()
+    mul()

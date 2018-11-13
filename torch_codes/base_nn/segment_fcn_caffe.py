@@ -20,10 +20,11 @@ from alfred.dl.torch.common import device
 from PIL import Image
 import numpy as np
 import cv2
-from util.seg_utils import draw_seg, voc_color_table
+from util.seg_utils import draw_seg,draw_seg_by_dataset
 from util.get_dataset_colormap import label_to_color_image
 
 import time
+import matplotlib.pyplot as plt
 
 
 voc_root = '/media/jintain/sg/permanent/datasets/VOCdevkit'
@@ -136,7 +137,7 @@ def predict(img_f):
     print(res.shape)
     print(res)
     # color idx to mask
-    masked, mask_color = draw_seg(img_original, res, voc_color_table)
+    masked, mask_color = draw_seg_by_dataset(img_original, res, 'pascal', alpha=0.7)
     cv2.imshow('masked', masked)
     cv2.imshow('masked_color', mask_color)
     cv2.imshow('res', res)
@@ -144,10 +145,6 @@ def predict(img_f):
     cv2.imwrite('results/{}_masked.png'.format(time.time()), masked)
     cv2.imwrite('results/{}_mask_color.png'.format(time.time()), mask_color)
     cv2.waitKey(0)
-
-
-
-
 
 
 if __name__ == '__main__':
