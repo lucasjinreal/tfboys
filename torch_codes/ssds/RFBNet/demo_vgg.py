@@ -8,14 +8,14 @@ import torchvision.transforms as transforms
 import numpy as np
 from torch.autograd import Variable
 from data import VOCroot
-from data import BaseTransform, COCO_300
+from data import BaseTransform, COCO_300, COCO_512
 import cv2
 from layers.functions import Detect, PriorBox
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from utils.nms_wrapper import nms
 from utils.timer import Timer
-from models.RFB_Net_vgg import build_net
+from models.RFB_Net_vgg import build_rfb_vgg_net
 from PIL import Image, ImageDraw
 import time
 
@@ -38,15 +38,23 @@ class Detector(object):
     def _init_model(self):
         if torch.cuda.is_available():
             cuda = True
-        cfg = COCO_300
+        if '300' in self.model_path:
+            cfg = COCO_300
+            self.img_dim = 300
+            print('Model input size is 300')
+        else:
+            cfg = COCO_512
+            self.img_dim = 512
+            print('Model input size is 512')
+
         priorbox = PriorBox(cfg)
         with torch.no_grad():
             priors = priorbox.forward()
             if cuda:
                 self.priors = priors.cuda()
 
-        self.net = build_net('test', 300, self.num_classes)  # initialize detector
-        state_dict = torch.load(self.model_path)
+        self.net = build_rfb_vgg_net('test', self.img_dim, self.num_classes)  # initialize detector
+        state_dict = torch.load(self.model_path)['state_dict']
         # create new OrderedDict that does not contain `module.`
         from collections import OrderedDict
         new_state_dict = OrderedDict()
@@ -135,5 +143,5 @@ class Detector(object):
 
 
 if __name__ == '__main__':
-    detector = Detector(model_path='weights/RFB_vgg_COCO_30.3.pth')
+    detector = Detector(model_path='weights/rfb_vgg_300_checkpoint.pth.tar')
     detector.predict_on_video('/media/jintain/sg/permanent/datasets/TestVideos/ETH-Bahnhof.mp4')

@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from utils.nms_wrapper import nms
 from utils.timer import Timer
-from models.RFB_Net_vgg import build_net
+from models.RFB_Net_vgg import build_rfb_vgg_net
 from models.RFB_Net_mobile import build_rfb_mobilenet
 from PIL import Image, ImageDraw
 import time
@@ -44,7 +44,7 @@ def test(img_path, model_path='weights/RFB_vgg_COCO_30.3.pth'):
     if 'mobile' in model_path:
         net = build_rfb_mobilenet('test', 300, numclass)  # initialize detector
     else:
-        net = build_net('test', 300, numclass)  # initialize detector
+        net = build_rfb_vgg_net('test', 300, numclass)  # initialize detector
 
     transform = BaseTransform(net.size, (123, 117, 104), (2, 0, 1))
     with torch.no_grad():
@@ -53,7 +53,7 @@ def test(img_path, model_path='weights/RFB_vgg_COCO_30.3.pth'):
         if cuda:
             x = x.cuda()
             scale = scale.cuda()
-    state_dict = torch.load(trained_model)
+    state_dict = torch.load(trained_model)['state_dict']
     # create new OrderedDict that does not contain `module.`
     from collections import OrderedDict
     new_state_dict = OrderedDict()
@@ -117,5 +117,5 @@ def test(img_path, model_path='weights/RFB_vgg_COCO_30.3.pth'):
     cv2.waitKey(0)
 
 
-test('images/COCO_train2014_000000012428.jpg', model_path='weights/RFB_mobile_20_7.pth')
+test('images/COCO_train2014_000000010495.jpg', model_path='weights/rfb_vgg_300_checkpoint.pth.tar')
 

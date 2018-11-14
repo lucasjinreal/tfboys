@@ -72,7 +72,7 @@ def train():
         cfg = (COCO_300, COCO_512)[args.size == '512']
 
     if args.version == 'RFB_vgg':
-        from models.RFB_Net_vgg import build_net
+        from models.RFB_Net_vgg import build_rfb_vgg_net
     elif args.version == 'RFB_E_vgg':
         from models.RFB_Net_E_vgg import build_net
     elif args.version == 'RFB_mobile':

@@ -64,11 +64,11 @@ class Trainer(object):
                         loss.backward()
                         self.optimizer.step()
                         if i % 10 == 0:
-                            print('Epoch: {}, iter: {}, loc_loss: {}, conf_loss: {}'.format(e, i, loss_l, loss_c))
-                    except Exception as e:
-                        print('Got loss error in train: {}'.format(e))
+                            print('Epoch: {}, iter: {}, loc_loss: {}, cls_loss: {}'.format(e, i, loss_l, loss_c))
+                    except Exception as _e:
+                        print('Got loss error in train: {}'.format(_e))
                         print('continue....')
-                        break
+                        continue
 
                 if e % self.save_epochs == 0:
                     print('Saving checkpoints at epoch: {}'.format(e))

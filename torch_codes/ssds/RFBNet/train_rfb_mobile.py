@@ -1,3 +1,8 @@
+"""
+The MobileNet actually does not work...
+
+
+"""
 from rfb_trainer import Trainer
 
 from models.RFB_Net_mobile import build_rfb_mobilenet
