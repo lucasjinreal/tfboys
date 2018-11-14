@@ -2,6 +2,8 @@
 __pycache__/
 *.pyc
 
+weights/
+.idea/
 # C extensions
 *.so
 *.o
