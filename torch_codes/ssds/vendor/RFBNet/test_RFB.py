@@ -19,13 +19,13 @@ from utils.timer import Timer
 
 parser = argparse.ArgumentParser(description='Receptive Field Block Net')
 
-parser.add_argument('-v', '--version', default='RFB_vgg',
+parser.add_argument('-v', '--version', default='RFB_mobile',
                     help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
 parser.add_argument('-s', '--size', default='300',
                     help='300 or 512 input size.')
-parser.add_argument('-d', '--dataset', default='VOC',
+parser.add_argument('-d', '--dataset', default='COCO',
                     help='VOC or COCO version')
-parser.add_argument('-m', '--trained_model', default='weights/RFB300_80_5.pth',
+parser.add_argument('-m', '--trained_model', default='weights/RFB_mobile_COCO_epoches_30.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--save_folder', default='eval/', type=str,
                     help='Dir to save results')
@@ -82,9 +82,9 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
         testset.evaluate_detections(all_boxes, save_folder)
         return
 
-
     for i in range(num_images):
         img = testset.pull_image(i)
+        # print('input ', img)
         scale = torch.Tensor([img.shape[1], img.shape[0],
                              img.shape[1], img.shape[0]])
         with torch.no_grad():
@@ -99,6 +99,8 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
         detect_time = _t['im_detect'].toc()
         boxes = boxes[0]
         scores=scores[0]
+        print('boxes ', boxes)
+        print('scores ', scores)
 
         boxes *= scale
         boxes = boxes.cpu().numpy()
@@ -136,6 +138,9 @@ def test_net(save_folder, net, detector, cuda, testset, transform, max_per_image
             _t['im_detect'].clear()
             _t['misc'].clear()
 
+        for b in all_boxes:
+            print(b)
+
     with open(det_file, 'wb') as f:
         pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
 
@@ -163,14 +168,13 @@ if __name__ == '__main__':
     net.load_state_dict(new_state_dict)
     net.eval()
     print('Finished loading model!')
-    print(net)
     # load data
     if args.dataset == 'VOC':
         testset = VOCDetection(
             VOCroot, [('2007', 'test')], None, AnnotationTransform())
     elif args.dataset == 'COCO':
         testset = COCODetection(
-            COCOroot, [('2014', 'minival')], None)
+            COCOroot, [('2017', 'val')], None)
             #COCOroot, [('2015', 'test-dev')], None)
     else:
         print('Only VOC and COCO dataset are supported now!')

@@ -75,6 +75,7 @@ class COCODetection(data.Dataset):
     def _get_ann_file(self, name):
         prefix = 'instances' if name.find('test') == -1 \
             else 'image_info'
+        print('load annotation file from ', os.path.join(self.root, 'annotations', prefix + '_' + name + '.json'))
         return os.path.join(self.root, 'annotations',
                             prefix + '_' + name + '.json')
 

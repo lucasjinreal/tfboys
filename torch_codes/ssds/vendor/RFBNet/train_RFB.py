@@ -21,7 +21,7 @@ import time
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Receptive Field Block Net Training')
-    parser.add_argument('-v', '--version', default='RFB_mobile',
+    parser.add_argument('-v', '--version', default='RFB_vgg',
                         help='RFB_vgg ,RFB_E_vgg or RFB_mobile version.')
     parser.add_argument('-s', '--size', default='300',
                         help='300 or 512 input size.')
@@ -33,7 +33,7 @@ def parse_args():
                         type=float, help='Min Jaccard index for matching')
     parser.add_argument('-b', '--batch_size', default=32,
                         type=int, help='Batch size for training')
-    parser.add_argument('--num_workers', default=8,
+    parser.add_argument('--num_workers', default=1,
                         type=int, help='Number of workers used in dataloading')
     parser.add_argument('--cuda', default=True,
                         type=bool, help='Use cuda to train model')
