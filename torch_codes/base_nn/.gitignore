@@ -1,4 +1,6 @@
 checkpoints/
 .idea/
+vendor/
 __pycache__/
 saved_model/
+logs/

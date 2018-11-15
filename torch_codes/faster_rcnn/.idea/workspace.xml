@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f2fe9cf4-c8b9-4af0-bd94-dba481b9df4b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/progress.md" beforeDir="false" afterPath="$PROJECT_DIR$/progress.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../ssds/vendor/RFBNet/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../ssds/vendor/RFBNet/.idea/workspace.xml" afterDir="false" />
-    </list>
+    <list default="true" id="f2fe9cf4-c8b9-4af0-bd94-dba481b9df4b" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -152,9 +149,9 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds" extendedState="1">
-    <option name="x" value="228" />
-    <option name="y" value="65" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="633" />
+    <option name="y" value="81" />
     <option name="width" value="1084" />
     <option name="height" value="999" />
   </component>
@@ -214,7 +211,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="228" y="65" width="1084" height="999" extended-state="1" />
+    <frame x="633" y="81" width="1084" height="999" extended-state="0" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.20712909" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />

@@ -19,6 +19,7 @@ class COCODetection(data.Dataset):
     def __init__(self, root, image_sets, preproc=None, target_transform=None,
                  dataset_name='COCO'):
         self.root = root
+        self.classes = 81
         self.cache_path = os.path.join(self.root, 'cache')
         self.image_set = image_sets
         self.preproc = preproc
