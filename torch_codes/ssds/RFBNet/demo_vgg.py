@@ -144,4 +144,5 @@ class Detector(object):
 
 if __name__ == '__main__':
     detector = Detector(model_path='weights/rfb_vgg_300_checkpoint.pth.tar')
-    detector.predict_on_video('/media/jintain/sg/permanent/datasets/TestVideos/ETH-Bahnhof.mp4')
+    # detector.predict_on_video('/media/jintain/sg/permanent/datasets/TestVideos/ETH-Bahnhof.mp4')
+    detector.predict_on_video('/media/jintian/netac/permanent/datasets/test_videos/road_demo.mp4')

@@ -21,13 +21,14 @@ batch_size = 2
 # pretrained_model = 'weights/vgg16_reducedfc.pth'
 pretrained_model = None
 num_classes = 81
+
 img_dim = 300
 rgb_means = (104, 117, 123)
 p = 0.6
 
 
 def train():
-    train_sets = [('2017', 'train'), ('2014', 'val')]
+    train_sets = [('2017', 'train'), ('2017', 'val')]
 
     if img_dim == 512:
         cfg = COCO_512
@@ -45,7 +46,7 @@ def train():
         net.base.load_state_dict(base_weights)
         print('Base weights load done.')
 
-    # net.load_state_dict(torch.load('weights/RFB_vgg_COCO_30.3.pth'))
+    net.load_state_dict(torch.load('weights/RFB_vgg_COCO_30.3.pth'))
     net.train()
 
     train_loader = DataLoader(dataset, batch_size, shuffle=True, collate_fn=detection_collate)
