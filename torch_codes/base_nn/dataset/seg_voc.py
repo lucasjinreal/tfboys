@@ -50,6 +50,7 @@ class VOCClassSegBase(data.Dataset):
         self.root = root
         self.split = split
         self._transform = transform
+        self.num_classes = len(self.class_names)
 
         # VOC2011 and others are subset of VOC2012
         dataset_dir = osp.join(self.root, 'VOC2012')

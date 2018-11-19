@@ -63,99 +63,185 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import utils
 import glob
 import cv2
+import PIL
 
 
-num_class = 33
-means = np.array([103.939, 116.779, 123.68]) / 255.  # mean of three channels in the order of BGR
-h, w = 1024, 2048
-train_h = int(h / 2)  # 512
-train_w = int(w / 2)  # 1024
-val_h = h  # 1024
-val_w = w  # 2048
 
+# class CityScapesSegDataset2(Dataset):
+#
+#     def __init__(self, root_dir, target_size, n_class=num_class, is_test=False, crop=False, flip_rate=0.):
+#
+#         self.image_files = glob.glob(os.path.join(root_dir, 'leftImg8bit/train/*/*.png'))
+#         self.label_files = [os.path.join(os.path.dirname(i).replace('leftImg8bit', 'gtFine'),
+#                                          os.path.basename(i).replace('leftImg8bit.png', 'gtFine_labelIds.png'))
+#                             for i in self.image_files]
+#
+#         self.image_files = sorted(self.image_files)
+#         self.label_files = sorted(self.label_files)
+#         assert len(self.image_files) == len(self.label_files), 'images and label not equal.'
+#         self.means = means
+#         self.n_class = n_class
+#         self.target_size = target_size
+#
+#         self.is_test = is_test
+#         self.flip_rate = flip_rate
+#         self.crop = crop
+#         if not self.is_test:
+#             self.crop = True
+#             self.flip_rate = 0.5
+#
+#             if len(target_size) > 1:
+#                 self.new_h = target_size[0]
+#                 self.new_w = target_size[1]
+#             else:
+#                 self.new_h = target_size
+#                 self.new_w = target_size
+#
+#         print('Dataset load done. {} images, {} targets.'.format(len(self.image_files), len(self.label_files)))
+#
+#     def __len__(self):
+#         return len(self.image_files)
+#
+#     def __getitem__(self, idx):
+#         img_name = self.image_files[idx]
+#         img = scipy.misc.imread(img_name, mode='RGB')
+#
+#         label_name = self.label_files[idx]
+#         label = cv2.imread(label_name, cv2.IMREAD_GRAYSCALE)
+#
+#         # 30% probability to crop image
+#         if self.crop and random.random() < 0.3:
+#             h, w, _ = img.shape
+#             top = random.randint(0, h - self.new_h)
+#             left = random.randint(0, w - self.new_w)
+#             img = img[top:top + self.new_h, left:left + self.new_w]
+#             label = label[top:top + self.new_h, left:left + self.new_w]
+#         else:
+#             # resize it, opencv resize is opposite, if you want (500, 800), send it (800, 500)
+#             img = cv2.resize(img, dsize=(self.new_w, self.new_h))
+#             label = cv2.resize(label, dsize=(self.new_w, self.new_h))
+#
+#         if random.random() < self.flip_rate:
+#             img = np.fliplr(img)
+#             label = np.fliplr(label)
+#
+#         # process image
+#         img = img[:, :, ::-1]  # switch to BGR
+#         img = np.transpose(img, (2, 0, 1)) / 255.
+#         img[0] -= self.means[0]
+#         img[1] -= self.means[1]
+#         img[2] -= self.means[2]
+#
+#         # expand label into [n_classes, h, w]
+#         target = np.zeros([self.n_class, self.new_h, self.new_w])
+#         for i in range(self.n_class):
+#             a = (label == i).astype(np.int8)
+#             target[i] = a
+#
+#         # cv2.imshow('1', target[26])
+#         # cv2.waitKey(0)
+#         img = np.asarray(img, dtype=np.float)
+#         target = np.asarray(target, dtype=np.double)
+#
+#         # convert to tensor
+#         img = torch.from_numpy(img.copy()).float()
+#         target = torch.from_numpy(target.copy()).double()
+#
+#         print(img.type())
+#         print(target.type())
+#         # X: img, Y: target (expand to n_class dim) , l: original label (single channel)
+#         sample = {'X': img, 'Y': target, 'l': label}
+#         return sample
 
-class CityScapesSegDataset(Dataset):
+class CityscapesSegDataset(Dataset):
+    mean_bgr = np.array([104.00698793, 116.66876762, 122.67891434])
 
-    def __init__(self, root_dir, target_size, n_class=num_class, is_test=False, crop=False, flip_rate=0.):
+    def __init__(self, root, split='train', target_size=(512, 1024), transform=False):
+        self.root = root
+        self.split = split
+        assert self.split in ['train', 'test', 'val'], 'only train or val support'
+        self._transform = transform
+        self.num_classes = 34
+        self.target_size = target_size
 
-        self.image_files = glob.glob(os.path.join(root_dir, 'leftImg8bit/train/*/*.png'))
+        self.image_files = glob.glob(os.path.join(root, 'leftImg8bit/{}/*/*.png'.format(self.split)))
+        self.image_files = sorted(self.image_files)
         self.label_files = [os.path.join(os.path.dirname(i).replace('leftImg8bit', 'gtFine'),
                                          os.path.basename(i).replace('leftImg8bit.png', 'gtFine_labelIds.png'))
                             for i in self.image_files]
 
-        self.image_files = sorted(self.image_files)
-        self.label_files = sorted(self.label_files)
         assert len(self.image_files) == len(self.label_files), 'images and label not equal.'
-        self.means = means
-        self.n_class = n_class
-        self.target_size = target_size
-
-        self.is_test = is_test
-        self.flip_rate = flip_rate
-        self.crop = crop
-        if not self.is_test:
-            self.crop = True
-            self.flip_rate = 0.5
-
-            if len(target_size) > 1:
-                self.new_h = target_size[0]
-                self.new_w = target_size[1]
-            else:
-                self.new_h = target_size
-                self.new_w = target_size
-
-        print('Dataset load done. {} images, {} targets.'.format(len(self.image_files), len(self.label_files)))
+        print('Found all {} images.'.format(len(self.image_files)))
 
     def __len__(self):
         return len(self.image_files)
 
-    def __getitem__(self, idx):
-        img_name = self.image_files[idx]
-        img = scipy.misc.imread(img_name, mode='RGB')
+    def __getitem__(self, index):
+        try:
+            img_file = self.image_files[index]
 
-        label_name = self.label_files[idx]
-        label = cv2.imread(label_name, cv2.IMREAD_GRAYSCALE)
+            img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
+            img = np.array(img, dtype=np.uint8)
 
-        # 30% probability to crop image
-        if self.crop and random.random() < 0.3:
-            h, w, _ = img.shape
-            top = random.randint(0, h - self.new_h)
-            left = random.randint(0, w - self.new_w)
-            img = img[top:top + self.new_h, left:left + self.new_w]
-            label = label[top:top + self.new_h, left:left + self.new_w]
-        else:
-            # resize it, opencv resize is opposite, if you want (500, 800), send it (800, 500)
-            img = cv2.resize(img, dsize=(self.new_w, self.new_h))
-            label = cv2.resize(label, dsize=(self.new_w, self.new_h))
+            # load label
+            lbl_file = self.label_files[index]
+            lbl = PIL.Image.open(lbl_file)
+            lbl = np.array(lbl, dtype=np.int32)
 
-        if random.random() < self.flip_rate:
-            img = np.fliplr(img)
-            label = np.fliplr(label)
+            if self._transform:
+                return self.transform(img, lbl)
+            else:
+                return img, lbl
+        except Exception as e:
+            print('Reading item corrupt: {}'.format(e))
+            print('Corrupt file path: ', img_file)
+            img_file = self.image_files[index]
 
-        # process image
-        img = img[:, :, ::-1]  # switch to BGR
-        img = np.transpose(img, (2, 0, 1)) / 255.
-        img[0] -= self.means[0]
-        img[1] -= self.means[1]
-        img[2] -= self.means[2]
+            img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
+            img = np.array(img, dtype=np.uint8)
 
-        # expand label into [n_classes, h, w]
-        target = np.zeros([self.n_class, self.new_h, self.new_w])
-        for i in range(self.n_class):
-            a = (label == i).astype(np.int8)
-            target[i] = a
+            # load label
+            lbl_file = self.label_files[index]
+            lbl = PIL.Image.open(lbl_file)
+            lbl = np.array(lbl, dtype=np.int32)
 
-        # cv2.imshow('1', target[26])
-        # cv2.waitKey(0)
-        img = np.asarray(img, dtype=np.float)
-        target = np.asarray(target, dtype=np.double)
+            if self._transform:
+                return self.transform(img, lbl)
+            else:
+                return img, lbl
 
-        # convert to tensor
-        img = torch.from_numpy(img.copy()).float()
-        target = torch.from_numpy(target.copy()).double()
+    def preprocess(self, img):
+        """
+        img reading from PIL.Image
+        :param img:
+        :return:
+        """
+        img = np.array(img, dtype=np.uint8)
+        img = img[:, :, ::-1]  # RGB -> BGR
+        img = img.astype(np.float64)
+        img -= self.mean_bgr
+        img = img.transpose(2, 0, 1)
+        return img
 
-        print(img.type())
-        print(target.type())
-        # X: img, Y: target (expand to n_class dim) , l: original label (single channel)
-        sample = {'X': img, 'Y': target, 'l': label}
-        return sample
+    def transform(self, img, lbl):
+        print('img: {}, lbl: {}'.format(img.shape, lbl.shape))
+        # resize img and lbl to target_size
+        img = cv2.resize(img, self.target_size)
+        lbl = cv2.resize(lbl, self.target_size)
+
+        img = img[:, :, ::-1]  # RGB -> BGR
+        img = img.astype(np.float64)
+        img -= self.mean_bgr
+        img = img.transpose(2, 0, 1)
+        img = torch.from_numpy(img).float()
+        lbl = torch.from_numpy(lbl).long()
+        return img, lbl
+
+    def untransform(self, img, lbl):
+        img = img.numpy()
+        img = img.transpose(1, 2, 0)
+        img += self.mean_bgr
+        img = img.astype(np.uint8)
+        img = img[:, :, ::-1]
+        lbl = lbl.numpy()
+        return img, lbl

@@ -98,7 +98,7 @@ class Trainer(object):
         training = self.model.training
         self.model.eval()
 
-        n_class = len(self.val_loader.dataset.class_names)
+        n_class = self.val_loader.dataset.num_classes
 
         val_loss = 0
         visualizations = []
@@ -172,7 +172,7 @@ class Trainer(object):
 
     def train(self):
         self.model.train()
-        n_class = len(self.train_loader.dataset.class_names)
+        n_class = self.train_loader.dataset.num_classes
 
         try:
             for e in range(self.start_epoch, self.epochs):
@@ -180,6 +180,7 @@ class Trainer(object):
                     if data is not None and target is not None:
 
                         data, target = data.to(device), target.to(device)
+                        print('data: {}, target: {}'.format(data.size(), target.size()))
                         data, target = Variable(data), Variable(target)
                         self.optimizer.zero_grad()
                         score = self.model(data)

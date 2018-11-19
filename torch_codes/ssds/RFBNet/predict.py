@@ -87,8 +87,6 @@ def test(img_path, model_path='weights/RFB_vgg_COCO_30.3.pth'):
     scores = scores.cpu().numpy()
     # Create figure and axes
     # Display the image
-    fig, ax = plt.subplots(1)
-    ax.imshow(img)
     # scale each detection back up to the image
     for j in range(1, numclass):
         # print(max(scores[:, j]))

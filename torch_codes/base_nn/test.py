@@ -4,7 +4,7 @@ import torch
 from torch.autograd import Variable
 import cv2
 from PIL import Image
-np.set_printoptions(threshold=np.inf)
+# np.set_printoptions(threshold=np.inf)
 
 
 
@@ -66,14 +66,15 @@ def cross_entropy():
 
 def mask_test():
     a = '/media/jintain/sg/permanent/datasets/Cityscapes/gtFine/train/ulm/ulm_000094_000019_gtFine_labelIds.png'
-    b = cv2.imread(a, cv2.IMREAD_GRAYSCALE)
-    print(b)
+    # b = cv2.imread(a, cv2.IMREAD_GRAYSCALE)
+    # print(b)
+    # c = b
 
     c = np.asarray(Image.open(a))
     print(c)
-
-    cv2.imshow('', c)
-    cv2.waitKey(0)
+    #
+    # cv2.imshow('', c)
+    # cv2.waitKey(0)
 
     print(np.max(c), np.min(c))
 
@@ -126,4 +127,4 @@ def mul():
     print(a*b)
 
 if __name__ == '__main__':
-    mul()
+    mask_test()
