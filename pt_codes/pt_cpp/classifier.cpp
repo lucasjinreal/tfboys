@@ -45,6 +45,7 @@ int main(int argc, const char* argv[]) {
         return -1;
     }
 
+    cout << "Will load from " << argv[1] << endl;
     shared_ptr<torch::jit::script::Module> module = torch::jit::load(argv[1]);
 
     if (module == nullptr) {

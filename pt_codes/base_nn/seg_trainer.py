@@ -59,15 +59,15 @@ class Trainer(object):
             datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
         self.size_average = size_average
 
-        if interval_validate is None:
-            self.interval_validate = len(self.train_loader)
-        else:
-            self.interval_validate = interval_validate
-
         self.out = out
         if not osp.exists(self.out):
             os.makedirs(self.out)
 
+        self.save_path = osp.join(self.out, '{}_checkpoint.pth.tar'.format(self.out.split('/')[-1]))
+        if interval_validate is None:
+            self.interval_validate = len(self.train_loader)
+        else:
+            self.interval_validate = interval_validate
         self.log_headers = [
             'epoch',
             'iteration',
@@ -177,45 +177,48 @@ class Trainer(object):
         try:
             for e in range(self.start_epoch, self.epochs):
                 for i, (data, target) in enumerate(self.train_loader):
-                    if data is not None and target is not None:
+                    try:
+                        if data is not None and target is not None:
+                            data, target = data.to(device), target.to(device)
+                            # print('data: {}, target: {}'.format(data.size(), target.size()))
+                            data, target = Variable(data), Variable(target)
+                            self.optimizer.zero_grad()
+                            score = self.model(data)
 
-                        data, target = data.to(device), target.to(device)
-                        print('data: {}, target: {}'.format(data.size(), target.size()))
-                        data, target = Variable(data), Variable(target)
-                        self.optimizer.zero_grad()
-                        score = self.model(data)
+                            loss = cross_entropy2d(score, target, size_average=self.size_average)
+                            loss /= len(data)
+                            loss_data = loss.data.item()
+                            if np.isnan(loss_data):
+                                raise ValueError('loss is nan while training')
+                            loss.backward()
+                            self.optimizer.step()
 
-                        loss = cross_entropy2d(score, target, size_average=self.size_average)
-                        loss /= len(data)
-                        loss_data = loss.data.item()
-                        if np.isnan(loss_data):
-                            raise ValueError('loss is nan while training')
-                        loss.backward()
-                        self.optimizer.step()
+                            metrics = []
+                            lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
+                            lbl_true = target.data.cpu().numpy()
+                            acc, acc_cls, mean_iu, fwavacc = utils.label_accuracy_score(
+                                lbl_true, lbl_pred, n_class=n_class)
+                            metrics.append((acc, acc_cls, mean_iu, fwavacc))
+                            metrics = np.mean(metrics, axis=0)
 
-                        metrics = []
-                        lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
-                        lbl_true = target.data.cpu().numpy()
-                        acc, acc_cls, mean_iu, fwavacc = utils.label_accuracy_score(
-                            lbl_true, lbl_pred, n_class=n_class)
-                        metrics.append((acc, acc_cls, mean_iu, fwavacc))
-                        metrics = np.mean(metrics, axis=0)
-
-                        if i % 10 == 0:
-                            print('Epoch: {}, iter: {}, acc: {}, acc_cls: {}, mean_iou: {}'.format(
-                                e, i, acc, acc_cls, mean_iu
-                            ))
-                        if e % 50 == 0 and e != 0:
-                            self.validate()
-                    else:
-                        print('passing one invalid training sample.')
+                            if i % 10 == 0:
+                                print('Epoch: {}, iter: {}, acc: {}, acc_cls: {}, mean_iou: {}'.format(
+                                    e, i, acc, acc_cls, mean_iu
+                                ))
+                            if e % 50 == 0 and e != 0:
+                                self.validate()
+                        else:
+                            print('passing one invalid training sample.')
+                            continue
+                    except ValueError:
+                        print('May got nan at loss. pass it.')
                         continue
                 if e % 10 == 0:
                     self.save_checkpoint(epoch=e, iter=i)
         except KeyboardInterrupt:
             print('Try saving model, pls hold...')
             self.save_checkpoint(epoch=e, iter=i)
-            print('Model has been saved into: {}'.format(os.path.join(self.out, 'checkpoint.pth.tar')))
+            print('Model has been saved into: {}'.format(self.save_path))
 
     def save_checkpoint(self, epoch, iter, is_best=True):
         torch.save({
@@ -225,22 +228,21 @@ class Trainer(object):
             'optim_state_dict': self.optimizer.state_dict(),
             'model_state_dict': self.model.state_dict(),
             'best_mean_iu': self.best_mean_iu,
-        }, osp.join(self.out, 'checkpoint.pth.tar'))
+        }, self.save_path)
 
     def load_checkpoint(self):
         if not self.out:
-            os.makedirs(self.out)
+            os.makedirs(self.out, exist_ok=True)
         else:
-            filename = os.path.join(self.out, 'checkpoint.pth.tar')
-            if os.path.exists(filename) and os.path.isfile(filename):
-                print('Loading checkpoint {}'.format(filename))
-                checkpoint = torch.load(filename)
+            if os.path.exists(self.save_path):
+                print('Loading checkpoint {}'.format(self.save_path))
+                checkpoint = torch.load(self.save_path)
                 self.start_epoch = checkpoint['epoch']
                 # self.best_top1 = checkpoint['best_top1']
                 self.model.load_state_dict(checkpoint['model_state_dict'])
                 self.optimizer.load_state_dict(checkpoint['optim_state_dict'])
                 print('checkpoint loaded successful from {} at epoch {}'.format(
-                    filename, self.start_epoch
+                    self.save_path, self.start_epoch
                 ))
             else:
-                print('No checkpoint exists from {}, skip load checkpoint...'.format(filename))
+                print('No checkpoint exists from {}, skip load checkpoint...'.format(self.save_path))

@@ -180,12 +180,14 @@ class CityscapesSegDataset(Dataset):
         try:
             img_file = self.image_files[index]
 
-            img = cv2.cvtColor(cv2.imread(img_file), cv2.COLOR_BGR2RGB)
+            img = cv2.imread(img_file)
+            img = cv2.resize(img, self.target_size)
             img = np.array(img, dtype=np.uint8)
 
             # load label
             lbl_file = self.label_files[index]
             lbl = PIL.Image.open(lbl_file)
+            lbl = lbl.resize(self.target_size)
             lbl = np.array(lbl, dtype=np.int32)
 
             if self._transform:
@@ -224,7 +226,7 @@ class CityscapesSegDataset(Dataset):
         return img
 
     def transform(self, img, lbl):
-        print('img: {}, lbl: {}'.format(img.shape, lbl.shape))
+        # print('img: {}, lbl: {}'.format(img.shape, lbl.shape))
         # resize img and lbl to target_size
         img = cv2.resize(img, self.target_size)
         lbl = cv2.resize(lbl, self.target_size)

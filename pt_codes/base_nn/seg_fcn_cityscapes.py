@@ -1,4 +1,16 @@
 #!/usr/bin/env python
+"""
+Train segmentation using FCNs
+on cityscapes, we need:
+
+Person
+Car
+Road
+etc.
+
+
+
+"""
 import os
 import os.path as osp
 import torch
@@ -8,12 +20,10 @@ from nets.seg.fcn8s import FCN8s
 from nets.seg.fcn16s import FCN16s
 from nets.seg.fcn32s import FCN32s
 
-from segment_trainer import Trainer
+from seg_trainer import Trainer
 from dataset.seg_voc import VOC2012ClassSeg, VOC2011ClassSeg
 
 # change dataloader to alfred wrapper
-from alfred.dl.torch.data.dataloader import SafeDataLoader
-from alfred.dl.torch.data.dataset import SafeDataset
 from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
@@ -25,14 +35,15 @@ from util.get_dataset_colormap import label_to_color_image
 
 import time
 import matplotlib.pyplot as plt
+from dataset.seg_cityscapes import CityscapesSegDataset
 
 
-voc_root = '/media/jintain/sg/permanent/datasets/VOCdevkit'
-here = osp.dirname(osp.abspath(__file__))
-if not os.path.exists(voc_root):
-    print('{} not found.'.format(voc_root))
-    exit(0)
-pre_train = False
+cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
+num_classes = 34
+batch_size = 16
+pre_train = True
+# hw
+target_size = (512, 1024)
 
 
 def get_parameters(model, bias=False):
@@ -63,17 +74,21 @@ def get_parameters(model, bias=False):
 
 
 def train():
+    here = osp.dirname(osp.abspath(__file__))
+    if not os.path.exists(cityscapes_root):
+        print('{} not found.'.format(cityscapes_root))
+        exit(0)
+
     model_type = 'FCN8s'
 
-    train_dataset = VOC2012ClassSeg(root=voc_root, transform=True)
-    train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+    train_dataset = CityscapesSegDataset(root=cityscapes_root, split='train', transform=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    val_dataset = VOC2011ClassSeg(root=voc_root, split='seg11valid', transform=True)
-    val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
+    val_dataset = CityscapesSegDataset(root=cityscapes_root, split='val', transform=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    model = FCN8s(n_class=21).to(device)
-    start_epoch = 0
-    start_iteration = 0
+    model = FCN8s(n_class=num_classes).to(device)
+    model.train()
 
     if pre_train:
         fcn16s = FCN16s()
@@ -99,17 +114,16 @@ def train():
         val_loader=val_loader,
         max_iter=150000,
         interval_validate=4000,
+        out='checkpoints/fcn_seg/cityscapes'
     )
-    trainer.epoch = start_epoch
-    trainer.iteration = start_iteration
     trainer.train()
 
 
 def predict(img_f):
     # predict on single image, just for preprocess image only
-    dataset = VOC2012ClassSeg(root=voc_root, transform=True)
+    dataset = CityscapesSegDataset(root=cityscapes_root, split='train', target_size=target_size, transform=True)
 
-    model = FCN8s(n_class=21).to(device)
+    model = FCN8s(n_class=num_classes).to(device)
     model.eval()
 
     image = Image.open(img_f)
