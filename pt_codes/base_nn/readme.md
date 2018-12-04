@@ -15,3 +15,12 @@ The first level in AI, is complete image classification program. However, it not
 2. loss function problem.
 
    still have 
+   
+   
+## Seg
+
+do some segmentation experiment on cityscapes and voc, but got some un-ususally result.
+
+1. pytorch loss function error
+
+    it means that label can not contains 255 or -1

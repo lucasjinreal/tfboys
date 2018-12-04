@@ -6,7 +6,7 @@ import cv2
 from PIL import Image
 # np.set_printoptions(threshold=np.inf)
 
-
+from dataset.seg_cityscapes import id2label, trainId2label, id2trainId
 
 def bce_loss_test():
     model = nn.Sequential(
@@ -65,6 +65,8 @@ def cross_entropy():
 
 
 def mask_test():
+    def map_func(x):
+        return id2trainId[x]
     a = '/media/jintain/sg/permanent/datasets/Cityscapes/gtFine/train/ulm/ulm_000094_000019_gtFine_labelIds.png'
     # b = cv2.imread(a, cv2.IMREAD_GRAYSCALE)
     # print(b)
@@ -73,14 +75,22 @@ def mask_test():
     c = np.asarray(Image.open(a))
     print(c)
     #
-    # cv2.imshow('', c)
+    cv2.imshow('ori', c)
     # cv2.waitKey(0)
 
     print(np.max(c), np.min(c))
 
     print(c.shape)
+    print(id2trainId)
+    vf = np.vectorize(map_func)
+    c = np.array(vf(c), dtype=np.uint8)
+    # c = np.array(map(id2trainId, c))
+    print(c)
+    print(np.max(c), np.min(c))
 
-    c = cv2.resize(c, dsize=(800, 500))
+
+
+    # c = cv2.resize(c, dsize=(800, 500))
     cv2.imshow('', c)
     cv2.waitKey(0)
     print(c.shape)

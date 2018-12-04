@@ -9,6 +9,8 @@ Road
 etc.
 
 
+Cityscapes still not work yet.
+
 
 """
 import os
@@ -39,9 +41,9 @@ from dataset.seg_cityscapes import CityscapesSegDataset
 
 
 cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
-num_classes = 34
-batch_size = 16
-pre_train = True
+num_classes = 19 + 1
+batch_size = 3
+pre_train = False
 # hw
 target_size = (512, 1024)
 
@@ -81,10 +83,10 @@ def train():
 
     model_type = 'FCN8s'
 
-    train_dataset = CityscapesSegDataset(root=cityscapes_root, split='train', transform=True)
+    train_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='train', transform=True)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    val_dataset = CityscapesSegDataset(root=cityscapes_root, split='val', transform=True)
+    val_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='val', transform=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     model = FCN8s(n_class=num_classes).to(device)
