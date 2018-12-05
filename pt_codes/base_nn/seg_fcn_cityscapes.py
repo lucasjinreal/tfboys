@@ -37,7 +37,7 @@ from util.get_dataset_colormap import label_to_color_image
 
 import time
 import matplotlib.pyplot as plt
-from dataset.seg_cityscapes import CityscapesSegDataset
+from dataset.seg_cityscapes import CityscapesSegDataset, CityscapesSegDatasetTrainID
 
 
 cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
@@ -83,10 +83,13 @@ def train():
 
     model_type = 'FCN8s'
 
-    train_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='train', transform=True)
+    # train_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='train', transform=True)
+    num_classes = 6
+    train_dataset = CityscapesSegDatasetTrainID(root=cityscapes_root, num_classes=num_classes)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
-    val_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='val', transform=True)
+    # val_dataset = CityscapesSegDataset(root=cityscapes_root, num_classes=num_classes, split='val', transform=True)
+    val_dataset = CityscapesSegDatasetTrainID(root=cityscapes_root, num_classes=num_classes)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     model = FCN8s(n_class=num_classes).to(device)

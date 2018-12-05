@@ -12,34 +12,12 @@ import scipy.misc
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
+from torch.nn import CrossEntropyLoss, NLLLoss2d, NLLLoss
 import tqdm
 
 # custom utilization tool
 from util import seg_utils as utils
 from alfred.dl.torch.common import device
-
-
-def cross_entropy2d(input, target, weight=None, size_average=True):
-    # input: (n, c, h, w), target: (n, h, w)
-    n, c, h, w = input.size()
-    # log_p: (n, c, h, w)
-    if LooseVersion(torch.__version__) < LooseVersion('0.3'):
-        # ==0.2.X
-        log_p = F.log_softmax(input)
-    else:
-        # >=0.3
-        log_p = F.log_softmax(input, dim=1)
-    # log_p: (n*h*w, c)
-    log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous()
-    log_p = log_p[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0]
-    log_p = log_p.view(-1, c)
-    # target: (n*h*w,)
-    mask = target >= 0
-    target = target[mask]
-    loss = F.nll_loss(log_p, target, weight=weight, reduction='sum')
-    if size_average:
-        loss /= mask.data.sum()
-    return loss
 
 
 class Trainer(object):
@@ -93,6 +71,10 @@ class Trainer(object):
         self.best_mean_iu = 0
 
         self.load_checkpoint()
+        self._create_optimizer()
+
+    def _create_optimizer(self):
+        self.criterion = NLLLoss(ignore_index=0)
 
     def validate(self):
         training = self.model.training
@@ -113,8 +95,8 @@ class Trainer(object):
             with torch.no_grad():
                 score = self.model(data)
 
-            loss = cross_entropy2d(score, target,
-                                   size_average=self.size_average)
+            score = F.log_softmax(score, dim=1)
+            loss = self.criterion(score, target)
             loss_data = loss.data.item()
             if np.isnan(loss_data):
                 raise ValueError('loss is nan while validating')
@@ -182,10 +164,11 @@ class Trainer(object):
                             data, target = data.to(device), target.to(device)
                             # print('data: {}, target: {}'.format(data.size(), target.size()))
                             data, target = Variable(data), Variable(target)
+
                             self.optimizer.zero_grad()
                             score = self.model(data)
-
-                            loss = cross_entropy2d(score, target, size_average=self.size_average)
+                            score = F.log_softmax(score, dim=1)
+                            loss = self.criterion(score, target)
                             loss /= len(data)
                             loss_data = loss.data.item()
                             if np.isnan(loss_data):
