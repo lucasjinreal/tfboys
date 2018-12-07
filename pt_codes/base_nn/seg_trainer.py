@@ -24,7 +24,7 @@ class Trainer(object):
 
     def __init__(self, model, optimizer,
                  train_loader, val_loader, max_iter, epochs=1000, out='checkpoints/fcn_seg',
-                 size_average=False, interval_validate=None):
+                 interval_validate=None):
         self.model = model
         self.optimizer = optimizer
         self.epochs = epochs
@@ -32,10 +32,6 @@ class Trainer(object):
 
         self.train_loader = train_loader
         self.val_loader = val_loader
-
-        self.timestamp_start = \
-            datetime.datetime.now(pytz.timezone('Asia/Tokyo'))
-        self.size_average = size_average
 
         self.out = out
         if not osp.exists(self.out):
@@ -46,24 +42,6 @@ class Trainer(object):
             self.interval_validate = len(self.train_loader)
         else:
             self.interval_validate = interval_validate
-        self.log_headers = [
-            'epoch',
-            'iteration',
-            'train/loss',
-            'train/acc',
-            'train/acc_cls',
-            'train/mean_iu',
-            'train/fwavacc',
-            'valid/loss',
-            'valid/acc',
-            'valid/acc_cls',
-            'valid/mean_iu',
-            'valid/fwavacc',
-            'elapsed_time',
-        ]
-        if not osp.exists(osp.join(self.out, 'log.csv')):
-            with open(osp.join(self.out, 'log.csv'), 'w') as f:
-                f.write(','.join(self.log_headers) + '\n')
 
         self.epoch = 0
         self.iteration = 0
@@ -74,7 +52,22 @@ class Trainer(object):
         self._create_optimizer()
 
     def _create_optimizer(self):
-        self.criterion = NLLLoss(ignore_index=0)
+        pass
+
+    def criterion(self, predict, target, ignore_index=-1, size_average=True):
+        """
+        criterion for FCN, the predict is (n, c, w, h), c is classes
+        :param predict:
+        :param target:
+        :param ignore_index:
+        :param size_average:
+        :return:
+        """
+        log_p = F.log_softmax(predict, dim=1)
+        # now log_p is 0~1, output would be 0 - n_classes
+        nll_loss = NLLLoss(ignore_index=ignore_index)
+        loss = nll_loss(log_p, target)
+        return loss
 
     def validate(self):
         training = self.model.training
@@ -124,15 +117,6 @@ class Trainer(object):
 
         val_loss /= len(self.val_loader)
 
-        with open(osp.join(self.out, 'log.csv'), 'a') as f:
-            elapsed_time = (
-                datetime.datetime.now(pytz.timezone('Asia/Tokyo')) -
-                self.timestamp_start).total_seconds()
-            log = [self.epoch, self.iteration] + [''] * 5 + \
-                  [val_loss] + list(metrics) + [elapsed_time]
-            log = map(str, log)
-            f.write(','.join(log) + '\n')
-
         mean_iu = metrics[2]
         is_best = mean_iu > self.best_mean_iu
         if is_best:
@@ -167,7 +151,7 @@ class Trainer(object):
 
                             self.optimizer.zero_grad()
                             score = self.model(data)
-                            score = F.log_softmax(score, dim=1)
+
                             loss = self.criterion(score, target)
                             loss /= len(data)
                             loss_data = loss.data.item()
@@ -179,6 +163,9 @@ class Trainer(object):
                             metrics = []
                             lbl_pred = score.data.max(1)[1].cpu().numpy()[:, :, :]
                             lbl_true = target.data.cpu().numpy()
+
+                            # print('lbl_pred: {}, lbl_true: {}'.format(lbl_pred, lbl_true))
+                            # print('{} vs {}'.format(np.max(lbl_pred), np.max(lbl_true)))
                             acc, acc_cls, mean_iu, fwavacc = utils.label_accuracy_score(
                                 lbl_true, lbl_pred, n_class=n_class)
                             metrics.append((acc, acc_cls, mean_iu, fwavacc))
@@ -189,7 +176,9 @@ class Trainer(object):
                                     e, i, acc, acc_cls, mean_iu
                                 ))
                             if e % 50 == 0 and e != 0:
-                                self.validate()
+                                print('pass one validate..')
+                                pass
+                                # self.validate()
                         else:
                             print('passing one invalid training sample.')
                             continue

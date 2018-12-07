@@ -281,7 +281,7 @@ class CityscapesSegDatasetTrainID(Dataset):
             13: 4,
             # truck
             14: 5
-            # others, all 0
+            # others, all -1
         }
 
         print(self.images_root)
@@ -296,7 +296,7 @@ class CityscapesSegDatasetTrainID(Dataset):
                             fn if self.is_label(f)]
         self.filenamesGt.sort()
 
-        self.vf = np.vectorize(self.map_func)
+        self.vfunc = np.vectorize(self.map_func)
 
     def map_func(self, x):
         if x in self.filtered_classes_map.keys():
@@ -314,22 +314,27 @@ class CityscapesSegDatasetTrainID(Dataset):
             image = np.array(image)
         with open(self.image_path_city(self.labels_root, filenameGt), 'rb') as f:
             label = self.load_image(f).convert('P')
-            label = np.array(self.vf(label), dtype=np.uint8)
+            lbl = np.array(label)
 
-            # cv2.imshow('lbl', label)
-            # cv2.waitKey(0)
+        img = cv2.resize(image, self.target_size)
+        lbl = cv2.resize(lbl, self.target_size)
+
+        lbl = np.array(self.vfunc(lbl), dtype=np.int32)
+        # some ignore, so as white edge
+        lbl[lbl == 255] = -1
+        # print('999 max: {}, min: {}'.format(np.max(lbl), np.min(lbl)))
+
+        # cv2.imshow('lbl', label)
+        # cv2.waitKey(0)
 
         if self.phase == 'train':
-            image, label = self.transform(image, label)
-        return image, label
+            img, label = self.transform(img, lbl)
+        return img, label
 
     def __len__(self):
         return len(self.filenames)
 
     def transform(self, img, lbl):
-        img = cv2.resize(img, self.target_size)
-        lbl = cv2.resize(lbl, self.target_size)
-
         img = img[:, :, ::-1]  # RGB -> BGR
         img = img.astype(np.float64)
         img -= self.mean_bgr

@@ -12,15 +12,13 @@ from seg_trainer import Trainer
 from dataset.seg_voc import VOC2012ClassSeg, VOC2011ClassSeg
 
 # change dataloader to alfred wrapper
-from alfred.dl.torch.data.dataloader import SafeDataLoader
-from alfred.dl.torch.data.dataset import SafeDataset
 from torch.utils.data import DataLoader
 from alfred.dl.torch.common import device
 
 from PIL import Image
 import numpy as np
 import cv2
-from util.seg_utils import draw_seg,draw_seg_by_dataset
+from util.seg_utils import draw_seg, draw_seg_by_dataset
 from util.get_dataset_colormap import label_to_color_image
 
 import time

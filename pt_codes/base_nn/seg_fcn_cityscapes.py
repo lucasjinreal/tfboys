@@ -18,7 +18,7 @@ import os.path as osp
 import torch
 import sys
 
-from nets.seg.fcn8s import FCN8s
+from nets.seg.fcn8s import FCN8s, FCN8sAtOnce
 from nets.seg.fcn16s import FCN16s
 from nets.seg.fcn32s import FCN32s
 
@@ -41,7 +41,7 @@ from dataset.seg_cityscapes import CityscapesSegDataset, CityscapesSegDatasetTra
 
 
 cityscapes_root = '/media/jintain/sg/permanent/datasets/Cityscapes'
-num_classes = 19 + 1
+num_classes = 6
 batch_size = 3
 pre_train = False
 # hw
@@ -92,7 +92,7 @@ def train():
     val_dataset = CityscapesSegDatasetTrainID(root=cityscapes_root, num_classes=num_classes)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-    model = FCN8s(n_class=num_classes).to(device)
+    model = FCN8sAtOnce(n_class=num_classes).to(device)
     model.train()
 
     if pre_train:
@@ -103,12 +103,13 @@ def train():
         except RuntimeError:
             fcn16s.load_state_dict(state_dict['model_state_dict'])
         model.copy_params_from_fcn16s(fcn16s)
+        print('pre-train model copied.')
 
     optim = torch.optim.SGD(
         [
             {'params': get_parameters(model, bias=False)},
             {'params': get_parameters(model, bias=True),
-             'lr': 10e-4, 'weight_decay': 0},
+             'lr': 10e-3, 'weight_decay': 0},
         ],
         lr=10e-5, momentum=0, weight_decay=0)
 
