@@ -33,6 +33,7 @@ example = torch.rand(1, 3, 224, 224)
 traced_script_module = torch.jit.trace(model, example)
 traced_script_module.save("resnet50_typescripts.pt")
 
+print('now model has been saved. testing it in python....')
 # evalute time
 batch = torch.rand(64, 3, 224, 224)
 start = time()

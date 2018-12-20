@@ -56,11 +56,13 @@ int main(int argc, const char* argv[]) {
     // load image and transform
     cv::Mat image;
     image = cv::imread(argv[2], 1);
-    cv::cvtColor(image, image, CV_BGR2RGB);
-    cv::Mat img_float;
-    image.convertTo(img_float, CV_32F, 1.0/255);
-    cv::resize(img_float, img_float, cv::Size(224, 224));
-    auto img_tensor = torch::CUDA(torch::kFloat32).tensorFromBlob(img_float.data, {1, 224, 224, 3});
+    cv::Mat image_resized;
+    cv::resize(image, image_resized, cv::Size(224, 224));
+    cv::Mat image_resized_float;
+    image_resized.convertTo(image_resized_float, CV_32F, 1.0/255);
+
+    auto img_tensor = torch::CUDA(torch::kFloat32).tensorFromBlob(image_resized_float.data, {1, 224, 224, 3});
+    cout << "img tensor loaded..\n";
     img_tensor = img_tensor.permute({0, 3, 1, 2});
     img_tensor[0][0] = img_tensor[0][0].sub(0.485).div(0.229);
     img_tensor[0][1] = img_tensor[0][1].sub(0.456).div(0.224);
@@ -90,6 +92,9 @@ int main(int argc, const char* argv[]) {
         std::cout << "top-" << i+1 << " label: ";
         std::cout << labels[idx] << ", score: " << top_scores_a[i] << std::endl;
     }
+
+    cv::imshow("image", image);
+    cv::waitKey(0);
 
     return 0;
 }
