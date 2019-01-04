@@ -44,7 +44,7 @@ def conv_test():
     print(out)
     print(out.size())
 
-def onehot_test():
+def onehot_test():q
     """
     test one-hot usage in torch
     :return:

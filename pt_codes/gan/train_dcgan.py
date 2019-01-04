@@ -117,6 +117,8 @@ def train():
             if epoch % 2 == 0 and epoch != 0:
                 with torch.no_grad():
                     fake = net_g(fixed_noise).detach().cpu().numpy()
+                    print(fake.shape)
+                    fake = fake[0]
                     cv2.imwrite('log/{}_fake.png'.format(epoch), fake)
                     print('record a fake image to local.')
         

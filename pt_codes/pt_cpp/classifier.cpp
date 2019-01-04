@@ -29,7 +29,7 @@
 using namespace std;
 
 
-void load_labels(string label_f, vector<string> labels) {
+void load_labels(string label_f, vector<string> &labels) {
     ifstream ins(label_f);
     string line;
     while (getline(ins, line)) {
@@ -61,16 +61,18 @@ int main(int argc, const char* argv[]) {
     cv::Mat image_resized_float;
     image_resized.convertTo(image_resized_float, CV_32F, 1.0/255);
 
-    auto img_tensor = torch::CUDA(torch::kFloat32).tensorFromBlob(image_resized_float.data, {1, 224, 224, 3});
+    auto img_tensor = torch::from_blob(image_resized_float.data, {1, 224, 224, 3}).to(torch::kCUDA);
     cout << "img tensor loaded..\n";
     img_tensor = img_tensor.permute({0, 3, 1, 2});
     img_tensor[0][0] = img_tensor[0][0].sub(0.485).div(0.229);
     img_tensor[0][1] = img_tensor[0][1].sub(0.456).div(0.224);
     img_tensor[0][2] = img_tensor[0][2].sub(0.406).div(0.225);
-    auto img_var = torch::autograd::make_variable(img_tensor, false);
+    // auto img_var = torch::autograd::make_variable(img_tensor, false);
 
     vector<torch::jit::IValue> inputs;
-    inputs.push_back(img_var);
+    inputs.push_back(img_tensor);
+    module->to(torch::kCUDA);
+    cout << "model converted to cuda.\n";
     torch::Tensor out_tensor = module->forward(inputs).toTensor();
     cout << out_tensor.slice(1, 0, 10) << '\n';
 
@@ -81,8 +83,9 @@ int main(int argc, const char* argv[]) {
 
     // out tensor sort, print the first 2 category
     std::tuple<torch::Tensor,torch::Tensor> result = out_tensor.sort(-1, true);
-    torch::Tensor top_scores = std::get<0>(result)[0];
-    torch::Tensor top_idxs = std::get<1>(result)[0].toType(torch::kInt32);
+    // cout << "result: " << result << endl;
+    torch::Tensor top_scores = std::get<0>(result)[0].to(torch::kCPU);
+    torch::Tensor top_idxs = std::get<1>(result)[0].toType(torch::kInt32).to(torch::kCPU);
 
     auto top_scores_a = top_scores.accessor<float,1>();
     auto top_idxs_a = top_idxs.accessor<int,1>();
@@ -94,7 +97,7 @@ int main(int argc, const char* argv[]) {
     }
 
     cv::imshow("image", image);
-    cv::waitKey(0);
+    while(cv::waitKey(1) != 27);
 
     return 0;
 }

@@ -26,3 +26,6 @@ endif ()
 
 add_executable(ptcpp classifier.cpp)
 target_link_libraries(ptcpp ${OpenCV_LIBS} ${TORCH_LIBRARIES})
+
+add_executable(tt test.cpp)
+target_link_libraries(tt ${OpenCV_LIBS} ${TORCH_LIBRARIES})
