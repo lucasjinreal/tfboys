@@ -66,7 +66,7 @@ def train():
 
     criterion = nn.BCELoss()
 
-    fixed_noise = torch.randn(batch_size, n_latent_vector, 1, 1, device=device)
+    fixed_noise = torch.randn(1, n_latent_vector, 1, 1, device=device)
 
     real_label = 1
     fake_label = 0
@@ -118,7 +118,8 @@ def train():
                 with torch.no_grad():
                     fake = net_g(fixed_noise).detach().cpu().numpy()
                     print(fake.shape)
-                    fake = fake[0]
+                    fake = np.transpose(np.squeeze(fake, axis=0), (1, 2, 0))
+                    print(fake.shape)
                     cv2.imwrite('log/{}_fake.png'.format(epoch), fake)
                     print('record a fake image to local.')
         
