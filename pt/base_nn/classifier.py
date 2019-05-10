@@ -98,7 +98,7 @@ def predict(img_f):
     )
 
     model = MobileNetV2(num_classes=num_classes, input_size=target_size).to(device)
-    model.load_state_dict(torch.load('./checkpoints/checkpoint.pth.tar')['state_dict'])
+    model.load_state_dict(torch.load('./weights/mb2_flowers.pth')['state_dict'])
     print('model loaded.')
     img = Image.open(img_f)
     img_tensor = transform(img)
