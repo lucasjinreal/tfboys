@@ -30,6 +30,9 @@ from torch.utils.data import DataLoader
 import cv2
 import numpy as np
 import torch
+from PIL import Image
+
+from alfred.dl.torch.common import device
 
 
 target_size = 224
@@ -73,7 +76,7 @@ def train():
     )
 
     # write some data loader
-    dataset = ImageFolder('../../tf_codes/data/flower_photos/', transform=transform)
+    dataset = ImageFolder('../../tf/data/flower_photos/', transform=transform)
     print(dataset.class_to_idx)
     num_classes = len(dataset.classes)
     dataloader = DataLoader(dataset=dataset, batch_size=12, shuffle=True, num_workers=0)
@@ -85,18 +88,32 @@ def train():
     trainer.train()
 
 
-def predict():
-    pass
+def predict(img_f):
+    transform = transforms.Compose(
+        [
+            transforms.Resize((target_size, target_size)),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor()
+        ]
+    )
+
+    model = MobileNetV2(num_classes=num_classes, input_size=target_size).to(device)
+    model.load_state_dict(torch.load('./checkpoints/checkpoint.pth.tar')['state_dict'])
+    print('model loaded.')
+    img = Image.open(img_f)
+    img_tensor = transform(img)
+    res = model(img_tensor.unsqueeze(0).to(device))
+    print(res)
+
 
 
 if __name__ == '__main__':
     if len(sys.argv) >= 2:
-
         if sys.argv[1] == 'train':
             train()
         elif sys.argv[1] == 'predict':
             img_f = sys.argv[2]
-            predict()
+            predict(img_f)
         elif sys.argv[1] == 'preview':
             test_data()
     else:
