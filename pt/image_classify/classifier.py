@@ -21,7 +21,9 @@ accuracy: 60.0%
 
 """
 from classifier_trainer import Trainer
-from nets.mobilenet_v2 import MobileNetV2
+from nets.mobilenetv2 import MobileNetV2
+from nets.mobilenetv3 import MobileNetV3Small
+
 import sys
 from torch.utils.data import Dataset
 from torchvision.datasets import ImageFolder
@@ -29,9 +31,10 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 import cv2
 import numpy as np
+import os
 import torch
 from PIL import Image
-
+import glob
 from alfred.dl.torch.common import device
 
 
@@ -76,12 +79,13 @@ def train():
     )
 
     # write some data loader
-    dataset = ImageFolder('../../tf/data/flower_photos/', transform=transform)
+    dataset = ImageFolder('../../data/flower_photos/', transform=transform)
     print(dataset.class_to_idx)
     num_classes = len(dataset.classes)
     dataloader = DataLoader(dataset=dataset, batch_size=12, shuffle=True, num_workers=0)
 
-    model = MobileNetV2(num_classes=num_classes, input_size=target_size)
+    # model = MobileNetV2(num_classes=num_classes, input_size=target_size)
+    model = MobileNetV3Small(num_classes=num_classes)
     trainer = Trainer(model=model, train_loader=dataloader, val_loader=None, save_epochs=50,
                       checkpoint_dir='./checkpoints', resume_from='checkpoint.pth.tar', 
                       num_epochs=100)
@@ -92,18 +96,40 @@ def predict(img_f):
     transform = transforms.Compose(
         [
             transforms.Resize((target_size, target_size)),
-            transforms.RandomHorizontalFlip(),
             transforms.ToTensor()
         ]
     )
+    dataset = ImageFolder('../../data/flower_photos/', transform=transform)
 
-    model = MobileNetV2(num_classes=num_classes, input_size=target_size).to(device)
-    model.load_state_dict(torch.load('./weights/mb2_flowers.pth')['state_dict'])
+    # model = MobileNetV2(num_classes=num_classes, input_size=target_size).to(device)
+    model = MobileNetV3Small(num_classes=num_classes).to(device)
+    model.eval()
+    model.load_state_dict(torch.load('./weights/mb3_flowers.pth.tar')['state_dict'])
     print('model loaded.')
-    img = Image.open(img_f)
-    img_tensor = transform(img)
-    res = model(img_tensor.unsqueeze(0).to(device))
-    print(res)
+    
+    if os.path.isdir(img_f):
+        all_imgs_f = glob.glob(os.path.join(img_f, '*.jpg'))
+        for img_f in all_imgs_f:
+            img = Image.open(img_f)
+            img_tensor = transform(img)
+            print(img_tensor.size())
+            # there is a batch norm issue when inference on single image (batch is 1)
+            res = model(img_tensor.unsqueeze(0).to(device))
+            res = res.detach().cpu().numpy()[0]
+            print(res)
+            print('this is: {}'.format(dataset.classes[np.argmax(res)]))
+
+            cv2.imshow('rr', np.array(np.array(img)*255, np.uint8))
+            cv2.waitKey(0)
+    else:
+        img = Image.open(img_f)
+        img_tensor = transform(img)
+        print(img_tensor.size())
+        # there is a batch norm issue when inference on single image (batch is 1)
+        res = model(img_tensor.unsqueeze(0).to(device))
+        res = res.detach().cpu().numpy()[0]
+        print(res)
+        print('this is: {}'.format(dataset.classes[np.argmax(res)]))
 
 
 
