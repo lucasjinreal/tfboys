@@ -272,7 +272,7 @@ class LayerNamespaceWrapper(tf.keras.layers.Layer):
 
 
 # ----------------------- Net building part --------------------------
-class MobileNetV3(tf.keras.Model):
+class MobileNetV3Small(tf.keras.Model):
     def __init__(
             self,
             num_classes: int=1001,

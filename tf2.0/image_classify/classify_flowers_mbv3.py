@@ -2,6 +2,8 @@ from alfred.dl.tf.common import mute_tf
 mute_tf()
 import tensorflow as tf
 import tensorflow_datasets as tfds
+import numpy as np
+
 from alfred.utils.log import logger as logging
 import os
 import sys
@@ -16,15 +18,17 @@ def preprocess(x):
     """
     minus mean pixel or normalize?
     """
-    x['image'] = tf.image.resize(x['image'], (target_size, target_size)) / 255.
+    x['image'] = tf.image.resize(x['image'], (target_size, target_size))
+    x['image'] /= 255.
+    # we are in 0-1 now, but MobileNetV2 requires [-1, 1]
+    x['image'] = 2*x['image'] - 1
     return x
 
 def train():
-    # using mobilenetv2 classify tf_flowers dataset
+    # using mobilenetv3 classify tf_flowers dataset
     dataset, _ = tfds.load('tf_flowers', with_info=True)
     train_dataset = dataset['train']
     train_dataset = train_dataset.shuffle(100).map(preprocess).batch(4).repeat()
-    print(train_dataset)
 
     # init model
     model = tf.keras.applications.MobileNetV2(input_shape=(target_size, target_size, 3), weights=None, include_top=True, classes=5)
@@ -41,8 +45,6 @@ def train():
         logging.info('passing resume since weights not there. training from scratch')
 
     if use_keras_fit:
-        # train_images = train_dataset['image']
-        # train_labels = train_dataset['label']
         model.compile(
             optimizer='adam',
             loss='sparse_categorical_crossentropy',
@@ -51,11 +53,11 @@ def train():
         logging.error('this not currently possiable to fit a generator into keras.model.')
 
     else:
-        loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
-        optimizer = tf.keras.optimizers.Adam()
+        loss_object = tf.losses.SparseCategoricalCrossentropy()
+        optimizer = tf.optimizers.RMSprop()
 
-        train_loss = tf.keras.metrics.Mean(name='train_loss')
-        train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+        train_loss = tf.metrics.Mean(name='train_loss')
+        train_accuracy = tf.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
         for epoch in range(start_epoch, 120):
             try:
