@@ -272,15 +272,17 @@ class LayerNamespaceWrapper(tf.keras.layers.Layer):
 
 
 # ----------------------- Net building part --------------------------
+# TODO: convert model to Functional or Sequential so that can be saved as h5 model
+
 class MobileNetV3Small(tf.keras.Model):
     def __init__(
             self,
-            num_classes: int=1001,
+            classes: int=1001,
             width_multiplier: float=1.0,
             scope: str="MobileNetV3",
             divisible_by: int=8,
     ):
-        super().__init__(name=scope)
+        super(MobileNetV3Small, self).__init__(name=scope)
 
         # First layer
         self.first_layer = ConvBnAct(16, kernel_size=3, stride=2, padding=1, act_layer=HardSwish)
@@ -330,7 +332,7 @@ class MobileNetV3Small(tf.keras.Model):
                 GlobalAveragePooling2D(),
                 HardSwish(),
                 ConvBnAct(last_channels, kernel_size=1, act_layer=HardSwish),
-                ConvBnAct(num_classes, kernel_size=1, act_layer=HardSwish),
+                ConvBnAct(classes, kernel_size=1, act_layer=HardSwish),
             ],
             name="LastStage",
         )
@@ -345,7 +347,7 @@ class MobileNetV3Small(tf.keras.Model):
 class MobileNetV3Large(tf.keras.Model):
     def __init__(
             self,
-            num_classes: int=1001,
+            classes: int=1001,
             width_multiplier: float=1.0,
             scope: str="MobileNetV3Large",
             divisible_by: int=8,
@@ -404,7 +406,7 @@ class MobileNetV3Large(tf.keras.Model):
                 HardSwish(),
                 tf.keras.layers.Conv2D(filters=last_channels, kernel_size=1, name="Conv1x1"),
                 HardSwish(),
-                tf.keras.layers.Conv2D(filters=num_classes, kernel_size=1, name="Conv1x1"),
+                tf.keras.layers.Conv2D(filters=classes, kernel_size=1, name="Conv1x1"),
             ],
             name="LastStage",
         )

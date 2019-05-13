@@ -10,15 +10,19 @@ import sys
 
 """
 A Simple training pipeline on TensorFlow 2.0 API
-with about 20 epochs, model achieves 90% accuracy (training from scratch)
+with about 60 epochs, model achieves 90% accuracy (training from scratch)
 
-
+Epoch 1/50
+1700/1700 [==============================] - 74s 106ms/step - loss: 0.7693 - accuracy: 0.7104
+...
+Epoch 44/50
+1700/1700 [==============================] - 46s 66ms/step - loss: 0.2280 - accuracy: 0.9182
 """
 
 
 target_size = 224
-# use_keras_fit = False
-use_keras_fit = True
+use_keras_fit = False
+# use_keras_fit = True
 ckpt_path = './checkpoints/no_finetune/flowers_mbv2_scratch-{epoch}.ckpt'
 
 
@@ -40,6 +44,7 @@ def train():
     # init model
     model = tf.keras.applications.MobileNetV2(input_shape=(target_size, target_size, 3), weights=None, include_top=True, classes=5)
     # model.summary()
+    # model = tf.keras.models.load_model('flowers_mobilenetv2.h5')
     logging.info('model loaded.')
     
     start_epoch = 0
@@ -62,14 +67,16 @@ def train():
             train_dataset, epochs=50,             
             steps_per_epoch=700,)
         except KeyboardInterrupt:
-            model.save('flowers_mobilenetv2.h5')
+            model.save_weights(ckpt_path.format(epoch=0))
             logging.info('keras model saved.')
-        model.save('flowers_mobilenetv2.h5')
+        model.save_weights(ckpt_path.format(epoch=0))
+        model.save(os.path.join(os.path.dirname(ckpt_path), 'flowers_mobilenetv2.h5'))
     else:
-        loss_object = tf.losses.SparseCategoricalCrossentropy()
+        loss_fn = tf.losses.SparseCategoricalCrossentropy()
         optimizer = tf.optimizers.RMSprop()
 
         train_loss = tf.metrics.Mean(name='train_loss')
+        # the accuracy calculation has some problems, seems not right?
         train_accuracy = tf.metrics.SparseCategoricalAccuracy(name='train_accuracy')
 
         for epoch in range(start_epoch, 120):
@@ -79,12 +86,12 @@ def train():
                     images, labels = data
                     with tf.GradientTape() as tape:
                         predictions = model(images)
-                        loss = loss_object(labels, predictions)
+                        loss = loss_fn(labels, predictions)
                     gradients = tape.gradient(loss, model.trainable_variables)
                     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
                     train_loss(loss)
                     train_accuracy(labels, predictions)
-                    if batch % 50 == 0:
+                    if batch % 10 == 0:
                         logging.info('Epoch: {}, iter: {}, loss: {}, train_acc: {}'.format(
                         epoch, batch, train_loss.result(), train_accuracy.result()))
             except KeyboardInterrupt:

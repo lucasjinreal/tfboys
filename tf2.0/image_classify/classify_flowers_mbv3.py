@@ -8,10 +8,20 @@ from alfred.utils.log import logger as logging
 import os
 import sys
 
+from backbones.mobilenetv3 import MobileNetV3Small
+
+"""
+Image Classifier with MobileNetV3
+it converges much more slower than MobileNetV2
+
+"""
+
 
 target_size = 224
+batch_size = 1
 use_keras_fit = False
-ckpt_path = './checkpoints/flowers_mbv2-{epoch}.ckpt'
+# use_keras_fit = True
+ckpt_path = './checkpoints/no_finetune_mbv3/flowers_mbv3_scratch-{epoch}.ckpt'
 
 
 def preprocess(x):
@@ -20,18 +30,17 @@ def preprocess(x):
     """
     x['image'] = tf.image.resize(x['image'], (target_size, target_size))
     x['image'] /= 255.
-    # we are in 0-1 now, but MobileNetV2 requires [-1, 1]
     x['image'] = 2*x['image'] - 1
-    return x
+    return x['image'], x['label']
 
 def train():
-    # using mobilenetv3 classify tf_flowers dataset
+    # using mobilenetv2 classify tf_flowers dataset
     dataset, _ = tfds.load('tf_flowers', with_info=True)
     train_dataset = dataset['train']
-    train_dataset = train_dataset.shuffle(100).map(preprocess).batch(4).repeat()
+    train_dataset = train_dataset.shuffle(100).map(preprocess).batch(batch_size).repeat()
 
     # init model
-    model = tf.keras.applications.MobileNetV2(input_shape=(target_size, target_size, 3), weights=None, include_top=True, classes=5)
+    model = MobileNetV3Small(classes=5, )
     # model.summary()
     logging.info('model loaded.')
     
@@ -45,13 +54,20 @@ def train():
         logging.info('passing resume since weights not there. training from scratch')
 
     if use_keras_fit:
+        # todo: why keras fit converge faster than tf loop?
         model.compile(
             optimizer='adam',
             loss='sparse_categorical_crossentropy',
             metrics=['accuracy'])
-        model.fit(train_dataset.take(1), epochs=50)
-        logging.error('this not currently possiable to fit a generator into keras.model.')
-
+        try:
+            model.fit(
+            train_dataset, epochs=50,             
+            steps_per_epoch=700,)
+        except KeyboardInterrupt:
+            model.save_weights(ckpt_path.format(epoch=0))
+            logging.info('keras model saved.')
+        model.save_weights(ckpt_path.format(epoch=0))
+        # model.save(os.path.join(os.path.dirname(ckpt_path), 'flowers_mobilenetv3.h5'))
     else:
         loss_object = tf.losses.SparseCategoricalCrossentropy()
         optimizer = tf.optimizers.RMSprop()
@@ -62,16 +78,19 @@ def train():
         for epoch in range(start_epoch, 120):
             try:
                 for batch, data in enumerate(train_dataset):
-                    images, labels = data['image'], data['label']
+                    # images, labels = data['image'], data['label']
+                    images, labels = data
                     with tf.GradientTape() as tape:
                         predictions = model(images)
+                        print('pred: ', predictions)
                         loss = loss_object(labels, predictions)
                     gradients = tape.gradient(loss, model.trainable_variables)
                     optimizer.apply_gradients(zip(gradients, model.trainable_variables))
                     train_loss(loss)
+                    # we should gather all accuracy and using average
                     train_accuracy(labels, predictions)
                     if batch % 50 == 0:
-                        logging.info('Epoch: {}, iter: {}, loss: {}, train_accuracy: {}'.format(
+                        logging.info('Epoch: {}, iter: {}, loss: {}, train_acc: {}'.format(
                         epoch, batch, train_loss.result(), train_accuracy.result()))
             except KeyboardInterrupt:
                 logging.info('interrupted.')
