@@ -21,9 +21,4 @@ model = Sequential([
     layers.Dense(128, activation='relu'),
     layers.Dense(10, activation='softmax')
 ])
-model.compile(
-    optimizer='adam',
-    loss='sparse_categorical_crossentropy',
-    metrics=['accuracy'])
 
-model.fit(train_images, train_labels, epochs=5)
