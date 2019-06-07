@@ -1,24 +1,28 @@
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras import layers
 from tensorflow.keras import Sequential
+import tensorflow as tf
 
-(train_images, train_labels), (test_images,
-                               test_labels) = fashion_mnist.load_data()
 
-class_names = [
-    'T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt',
-    'Sneaker', 'Bag', 'Ankle boot'
-]
+class MyLayer(tf.keras.layers.Layer):
 
-print(train_images.shape)
-print(train_labels.shape)
+    def __init__(self, input_dim, unit):
+        super(MyLayer, self).__init__()
 
-train_images = train_images / 255.0
-test_images = test_images / 255.0
+        w_init = tf.random_normal_initializer()
+        self.weight = tf.Variable(initial_value=w_init(shape=(input_dim, unit), dtype=tf.float32),
+                                   trainable=True)
 
-model = Sequential([
-    layers.Flatten(input_shape=[28, 28]),
-    layers.Dense(128, activation='relu'),
-    layers.Dense(10, activation='softmax')
-])
+        b_init = tf.zeros_initializer()
+        self.bias = tf.Variable(initial_value=b_init(shape=(unit,), dtype=tf.float32),
+                                trainable=True)
 
+    def call(self, inputs):
+        return tf.matmul(inputs, self.weight) + self.bias
+
+
+x = tf.ones((3, 10))
+print(x)
+my_layers = MyLayer(10, 20)
+out = my_layers(x)
+print(out)
