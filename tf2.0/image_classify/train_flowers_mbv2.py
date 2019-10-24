@@ -46,7 +46,7 @@ def train():
     # model.summary()
     # model = tf.keras.models.load_model('flowers_mobilenetv2.h5')
     logging.info('model loaded.')
-    
+
     start_epoch = 0
     latest_ckpt = tf.train.latest_checkpoint(os.path.dirname(ckpt_path))
     if latest_ckpt:
@@ -64,7 +64,7 @@ def train():
             metrics=['accuracy'])
         try:
             model.fit(
-            train_dataset, epochs=50,             
+            train_dataset, epochs=50,
             steps_per_epoch=700,)
         except KeyboardInterrupt:
             model.save_weights(ckpt_path.format(epoch=0))
@@ -93,7 +93,11 @@ def train():
                     train_accuracy(labels, predictions)
                     if batch % 10 == 0:
                         logging.info('Epoch: {}, iter: {}, loss: {}, train_acc: {}'.format(
-                        epoch, batch, train_loss.result(), train_accuracy.result()))
+                        epoch, batch, loss.numpy(), train_accuracy.result()))   # "loss" actually calculates the loss value of each batch
+                    train_accuracy.reset_states()
+            train_loss.reset_states()
+            logging.info('Average training loss on epoch: {} is {}'.format(epoch, train_loss.result())) # "train_loss" keeps the "loss" of each batch in this epoch and calculates their mean value
+
             except KeyboardInterrupt:
                 logging.info('interrupted.')
                 model.save_weights(ckpt_path.format(epoch=epoch))
